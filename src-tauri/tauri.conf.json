@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "identifier": "com.deadlyze.app",
   "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npx vite",
+    "beforeBuildCommand": "npx tsc && npx vite build",
     "devUrl": "http://localhost:1420",
     "frontendDist": "../dist"
   },
@@ -27,6 +27,8 @@
     "withGlobalTauri": false
   },
   "bundle": {
-    "active": false
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"]
   }
 }
