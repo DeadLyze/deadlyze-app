@@ -1,0 +1,34 @@
+{
+  "productName": "DeadLyze",
+  "version": "0.0.1",
+  "identifier": "com.deadlyze.app",
+  "build": {
+    "beforeDevCommand": "npx vite",
+    "beforeBuildCommand": "npx tsc && npx vite build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "DeadLyze",
+        "width": 1400,
+        "height": 800,
+        "minWidth": 1400,
+        "minHeight": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "withGlobalTauri": false
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"]
+  }
+}
