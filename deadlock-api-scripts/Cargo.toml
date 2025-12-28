@@ -11,6 +11,10 @@ path = "batch_steam_profile.rs"
 name = "patch_notes"
 path = "patch_notes.rs"
 
+[[bin]]
+name = "badge_distribution"
+path = "badge_distribution.rs"
+
 [dependencies]
 tokio = { version = "1.42", features = ["full"] }
 reqwest = { version = "0.12", features = ["json"] }
