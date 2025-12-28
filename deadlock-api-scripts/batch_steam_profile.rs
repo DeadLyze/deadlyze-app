@@ -18,6 +18,15 @@
 // - Retrieve full avatar URL - `avatarfull`: String
 // - Retrieve Steam profile URL - `profileurl`: String
 // - Retrieve last update date - `last_updated`: i64
+//
+// Output Format:
+// - Script name: "Batch Steam Profile"
+// - For each profile (multiple records):
+//   - personaname
+//   - avatarfull
+//   - profileurl
+//   - last_updated
+//   - (visual separator between blocks)
 
 use serde::{Deserialize, Serialize};
 use std::error::Error;
