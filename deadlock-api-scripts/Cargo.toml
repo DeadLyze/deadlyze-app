@@ -7,6 +7,10 @@ edition = "2021"
 name = "batch_steam_profile"
 path = "batch_steam_profile.rs"
 
+[[bin]]
+name = "patch_notes"
+path = "patch_notes.rs"
+
 [dependencies]
 tokio = { version = "1.42", features = ["full"] }
 reqwest = { version = "0.12", features = ["json"] }
