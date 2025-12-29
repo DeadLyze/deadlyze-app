@@ -6,13 +6,21 @@
   -webkit-user-select: none;
   user-select: none;
   -webkit-user-drag: none;
+  outline: none;
 }
 
 body {
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 img {
   pointer-events: none;
   -webkit-user-drag: none;
+}
+
+#root {
+  outline: none;
+  border: none;
 }
