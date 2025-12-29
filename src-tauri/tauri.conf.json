@@ -16,15 +16,17 @@
         "height": 800,
         "minWidth": 1400,
         "minHeight": 800,
-        "resizable": true,
+        "resizable": false,
         "fullscreen": false,
-        "decorations": false
+        "decorations": false,
+        "dragDropEnabled": false,
+        "alwaysOnTop": true
       }
     ],
     "security": {
       "csp": null
     },
-    "withGlobalTauri": false
+    "withGlobalTauri": true
   },
   "bundle": {
     "active": true,
