@@ -1,6 +1,6 @@
 {
   "productName": "DeadLyze",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "identifier": "com.deadlyze.app",
   "build": {
     "beforeDevCommand": "npx vite",
