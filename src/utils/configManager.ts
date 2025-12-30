@@ -37,6 +37,7 @@ export class ConfigManager {
 
       return {
         language: settings.language || DEFAULT_SETTINGS.language,
+        opacity: settings.opacity ?? DEFAULT_SETTINGS.opacity,
       };
     } catch (error) {
       return DEFAULT_SETTINGS;

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import Sidebar from "./components/Sidebar/Sidebar";
 import PageContainer from "./components/PageContainer/PageContainer";
 import WindowControls from "./components/WindowControls/WindowControls";
@@ -11,6 +12,7 @@ function App() {
       try {
         const settings = await ConfigManager.load();
         await i18n.changeLanguage(settings.language);
+        await invoke("set_window_opacity", { opacity: settings.opacity });
       } catch (error) {
         console.error("Failed to initialize app:", error);
       }

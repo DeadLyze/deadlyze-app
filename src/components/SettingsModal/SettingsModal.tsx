@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RxCross2 } from "react-icons/rx";
 import { FiFolder } from "react-icons/fi";
+import { invoke } from "@tauri-apps/api/core";
 import packageJson from "../../../package.json";
 import SettingItem from "./SettingItem";
 import { ConfigManager } from "../../utils/configManager";
@@ -91,6 +92,22 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   }, [i18n.language]);
 
   useEffect(() => {
+    const loadOpacity = async () => {
+      try {
+        const settings = await ConfigManager.load();
+        setOpacity(settings.opacity);
+        await invoke("set_window_opacity", { opacity: settings.opacity });
+      } catch (error) {
+        console.error("Failed to load opacity:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadOpacity();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
       setTimeout(() => setIsAnimating(true), 10);
@@ -118,6 +135,8 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const defaultSettings = await ConfigManager.load();
       await i18n.changeLanguage(defaultSettings.language);
       setCurrentLanguage(defaultSettings.language);
+      setOpacity(defaultSettings.opacity);
+      await invoke("set_window_opacity", { opacity: defaultSettings.opacity });
     } catch (error) {
       console.error("Failed to reset settings:", error);
     }
@@ -143,9 +162,28 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
-  const handleOpacityBlur = () => {
+  const handleOpacityBlur = async () => {
+    let finalValue = opacity;
     if (opacity === "" || opacity < OPACITY_MIN) {
+      finalValue = OPACITY_MIN;
       setOpacity(OPACITY_MIN);
+    }
+
+    try {
+      await invoke("set_window_opacity", { opacity: finalValue });
+      await ConfigManager.update({ opacity: finalValue });
+    } catch (error) {
+      console.error("Failed to save opacity:", error);
+    }
+  };
+
+  const handleSliderChange = async (value: number) => {
+    setOpacity(value);
+    try {
+      await invoke("set_window_opacity", { opacity: value });
+      await ConfigManager.update({ opacity: value });
+    } catch (error) {
+      console.error("Failed to update opacity:", error);
     }
   };
 
@@ -368,7 +406,9 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     max={OPACITY_MAX}
                     step="1"
                     value={typeof opacity === "number" ? opacity : OPACITY_MIN}
-                    onChange={(e) => setOpacity(parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleSliderChange(parseInt(e.target.value))
+                    }
                     className="w-full opacity-slider"
                     style={
                       {
