@@ -1,0 +1,36 @@
+{
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "general": "General",
+      "other": "Other"
+    },
+    "general": {
+      "title": "General Settings",
+      "language": {
+        "title": "Application Language",
+        "description": "Select the application interface language",
+        "options": {
+          "ru": "Russian",
+          "en": "English"
+        }
+      },
+      "shortcut": {
+        "title": "Show/Hide Shortcut",
+        "description": "Hotkey to minimize and maximize the application window"
+      },
+      "opacity": {
+        "title": "Window Opacity",
+        "description": "Adjust application window visibility from {{min}}% to {{max}}%"
+      },
+      "resetButton": "Reset Settings"
+    },
+    "other": {
+      "title": "Other Settings",
+      "appFolder": {
+        "title": "Application Folder",
+        "description": "Open application folder in file explorer"
+      }
+    }
+  }
+}

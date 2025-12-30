@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { RxCross2 } from "react-icons/rx";
 import { FiFolder } from "react-icons/fi";
 import packageJson from "../../../package.json";
@@ -77,11 +78,16 @@ const SLIDER_STYLES = `
 `;
 
 function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const { t, i18n } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [opacity, setOpacity] = useState<number | "">(OPACITY_DEFAULT);
-  const [language, setLanguage] = useState("ru");
+
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem("language") || "en";
+    i18n.changeLanguage(savedLanguage);
+  }, [i18n]);
 
   useEffect(() => {
     if (isOpen) {
@@ -95,14 +101,20 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   if (!isVisible) return null;
 
+  // Handlers
+  const handleLanguageChange = (newLanguage: string) => {
+    i18n.changeLanguage(newLanguage);
+    localStorage.setItem("language", newLanguage);
+  };
+
   const tabs = [
-    { id: "general" as SettingsTab, label: "General" },
-    { id: "other" as SettingsTab, label: "Other" },
+    { id: "general" as SettingsTab, label: t("settings.tabs.general") },
+    { id: "other" as SettingsTab, label: t("settings.tabs.other") },
   ];
 
   const tabTitles = {
-    general: "General Settings",
-    other: "Other Settings",
+    general: t("settings.general.title"),
+    other: t("settings.other.title"),
   };
 
   // Handlers
@@ -124,7 +136,10 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const calculateSliderPercent = () => {
     const value = typeof opacity === "number" ? opacity : OPACITY_MIN;
-    return (((value - OPACITY_MIN) / (OPACITY_MAX - OPACITY_MIN)) * 100).toFixed(2);
+    return (
+      ((value - OPACITY_MIN) / (OPACITY_MAX - OPACITY_MIN)) *
+      100
+    ).toFixed(2);
   };
 
   return (
@@ -170,7 +185,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 fontWeight: 900,
               }}
             >
-              Settings
+              {t("settings.title")}
             </h2>
             <nav className="flex flex-col gap-3">
               {tabs.map((tab) => (
@@ -239,12 +254,12 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <div className="flex-1 flex flex-col gap-6">
                 {/* Language setting */}
                 <SettingItem
-                  title="Application Language"
-                  description="Select the application interface language"
+                  title={t("settings.general.language.title")}
+                  description={t("settings.general.language.description")}
                   control={
                     <select
-                      value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
+                      value={i18n.language}
+                      onChange={(e) => handleLanguageChange(e.target.value)}
                       className="px-4 py-2 rounded cursor-pointer transition-opacity hover:opacity-80"
                       style={{
                         backgroundColor: "rgba(255, 255, 255, 0.08)",
@@ -257,10 +272,10 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       }}
                     >
                       <option value="ru" style={{ backgroundColor: "#17433C" }}>
-                        Russian
+                        {t("settings.general.language.options.ru")}
                       </option>
                       <option value="en" style={{ backgroundColor: "#17433C" }}>
-                        English
+                        {t("settings.general.language.options.en")}
                       </option>
                     </select>
                   }
@@ -268,8 +283,8 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                 {/* Shortcut setting */}
                 <SettingItem
-                  title="Show/Hide Shortcut"
-                  description="Hotkey to minimize and maximize the application window"
+                  title={t("settings.general.shortcut.title")}
+                  description={t("settings.general.shortcut.description")}
                   control={
                     <div
                       className="px-4 py-2 rounded cursor-pointer transition-opacity hover:opacity-80"
@@ -300,7 +315,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           marginBottom: "4px",
                         }}
                       >
-                        Window Opacity
+                        {t("settings.general.opacity.title")}
                       </h3>
                       <p
                         style={{
@@ -310,8 +325,10 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           lineHeight: "1.5",
                         }}
                       >
-                        Adjust application window visibility from {OPACITY_MIN}% to{" "}
-                        {OPACITY_MAX}%
+                        {t("settings.general.opacity.description", {
+                          min: OPACITY_MIN,
+                          max: OPACITY_MAX,
+                        })}
                       </p>
                     </div>
                     <input
@@ -356,15 +373,15 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     fontWeight: 500,
                   }}
                 >
-                  Reset Settings
+                  {t("settings.general.resetButton")}
                 </button>
               </div>
             ) : (
               <div className="flex-1 flex flex-col gap-6">
                 {/* Open app folder setting */}
                 <SettingItem
-                  title="Application Folder"
-                  description="Open application folder in file explorer"
+                  title={t("settings.other.appFolder.title")}
+                  description={t("settings.other.appFolder.description")}
                   control={
                     <button
                       className="p-2 rounded transition-opacity hover:opacity-80"
