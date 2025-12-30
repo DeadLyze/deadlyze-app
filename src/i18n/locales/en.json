@@ -30,6 +30,10 @@
       "appFolder": {
         "title": "Application Folder",
         "description": "Open application folder in file explorer"
+      },
+      "reset": {
+        "success": "Settings successfully reset to defaults",
+        "error": "Failed to reset settings. Please try again."
       }
     }
   }

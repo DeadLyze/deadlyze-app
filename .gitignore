@@ -22,3 +22,6 @@ Thumbs.db
 # Rust
 **/*.rs.bk
 *.pdb
+
+# User config
+config.json

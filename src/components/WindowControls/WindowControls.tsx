@@ -8,7 +8,7 @@ function WindowControls() {
     appWindow.minimize();
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     appWindow.close();
   };
 

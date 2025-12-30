@@ -4,6 +4,7 @@ import { RxCross2 } from "react-icons/rx";
 import { FiFolder } from "react-icons/fi";
 import packageJson from "../../../package.json";
 import SettingItem from "./SettingItem";
+import { ConfigManager } from "../../utils/configManager";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -83,11 +84,11 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [opacity, setOpacity] = useState<number | "">(OPACITY_DEFAULT);
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem("language") || "en";
-    i18n.changeLanguage(savedLanguage);
-  }, [i18n]);
+    setCurrentLanguage(i18n.language);
+  }, [i18n.language]);
 
   useEffect(() => {
     if (isOpen) {
@@ -101,10 +102,25 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   if (!isVisible) return null;
 
-  // Handlers
-  const handleLanguageChange = (newLanguage: string) => {
-    i18n.changeLanguage(newLanguage);
-    localStorage.setItem("language", newLanguage);
+  const handleLanguageChange = async (newLanguage: string) => {
+    try {
+      await i18n.changeLanguage(newLanguage);
+      setCurrentLanguage(newLanguage);
+      await ConfigManager.update({ language: newLanguage });
+    } catch (error) {
+      console.error("Failed to save language:", error);
+    }
+  };
+
+  const handleResetSettings = async () => {
+    try {
+      await ConfigManager.reset();
+      const defaultSettings = await ConfigManager.load();
+      await i18n.changeLanguage(defaultSettings.language);
+      setCurrentLanguage(defaultSettings.language);
+    } catch (error) {
+      console.error("Failed to reset settings:", error);
+    }
   };
 
   const tabs = [
@@ -117,7 +133,6 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     other: t("settings.other.title"),
   };
 
-  // Handlers
   const handleOpacityChange = (value: string) => {
     const cleanValue = value.replace(/\D/g, "");
     if (cleanValue === "") {
@@ -258,7 +273,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   description={t("settings.general.language.description")}
                   control={
                     <select
-                      value={i18n.language}
+                      value={currentLanguage}
                       onChange={(e) => handleLanguageChange(e.target.value)}
                       className="px-4 py-2 rounded cursor-pointer transition-opacity hover:opacity-80"
                       style={{
@@ -364,6 +379,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
 
                 <button
+                  onClick={handleResetSettings}
                   className="mt-auto self-end px-6 py-2 rounded transition-opacity hover:opacity-80"
                   style={{
                     backgroundColor: "rgba(255, 255, 255, 0.12)",
