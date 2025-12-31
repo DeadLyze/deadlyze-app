@@ -38,6 +38,7 @@ export class ConfigManager {
       return {
         language: settings.language || DEFAULT_SETTINGS.language,
         opacity: settings.opacity ?? DEFAULT_SETTINGS.opacity,
+        shortcut: settings.shortcut || DEFAULT_SETTINGS.shortcut,
       };
     } catch (error) {
       return DEFAULT_SETTINGS;

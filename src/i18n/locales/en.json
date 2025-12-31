@@ -17,7 +17,7 @@
       },
       "shortcut": {
         "title": "Show/Hide Shortcut",
-        "description": "Hotkey to minimize and maximize the application window"
+        "description": "A quick key or combination to hide and display the window"
       },
       "opacity": {
         "title": "Window Opacity",

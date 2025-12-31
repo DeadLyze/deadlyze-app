@@ -1,8 +1,22 @@
 // Prevents additional console window on Windows in release mode
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::Manager;
+use std::sync::Mutex;
+use tauri::{Emitter, Manager};
 
+/// Global application state
+struct AppState {
+    /// Window hidden flag (via shortcut)
+    is_hidden: Mutex<bool>,
+    /// Last toggle timestamp (for debounce)
+    last_toggle: Mutex<std::time::Instant>,
+    /// Currently registered shortcut
+    current_shortcut: Mutex<Option<String>>,
+    /// Shortcut handling active flag
+    shortcut_enabled: Mutex<bool>,
+}
+
+/// Sets window opacity (20-100)
 #[tauri::command]
 fn set_window_opacity(app: tauri::AppHandle, opacity: f64) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
@@ -33,10 +47,99 @@ fn set_window_opacity(app: tauri::AppHandle, opacity: f64) -> Result<(), String>
     }
 }
 
+/// Registers global shortcut (unregisters previous)
+#[tauri::command]
+fn register_shortcut(app: tauri::AppHandle, shortcut: String) -> Result<(), String> {
+    use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+    
+    let state = app.state::<AppState>();
+    
+    let _ = app.global_shortcut().unregister_all();
+    
+    let parsed_shortcut: Shortcut = shortcut.parse().map_err(|e| format!("Invalid shortcut: {:?}", e))?;
+    
+    app.global_shortcut()
+        .register(parsed_shortcut)
+        .map_err(|e| e.to_string())?;
+    
+    *state.current_shortcut.lock().unwrap() = Some(shortcut);
+    
+    Ok(())
+}
+
+/// Temporarily disables shortcut handling (used during editing)
+#[tauri::command]
+fn disable_shortcut(app: tauri::AppHandle) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    *state.shortcut_enabled.lock().unwrap() = false;
+    Ok(())
+}
+
+/// Re-enables shortcut handling
+#[tauri::command]
+fn enable_shortcut(app: tauri::AppHandle) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    *state.shortcut_enabled.lock().unwrap() = true;
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![set_window_opacity])
+        .plugin(tauri_plugin_global_shortcut::Builder::new()
+            .with_handler(|app, _shortcut, _event| {
+                let state = app.state::<AppState>();
+                
+                let current = state.current_shortcut.lock().unwrap().clone();
+                if current.is_none() {
+                    return;
+                }
+                
+                let mut last_toggle = state.last_toggle.lock().unwrap();
+                let now = std::time::Instant::now();
+                
+                if now.duration_since(*last_toggle).as_millis() < 200 {
+                    return;
+                }
+                *last_toggle = now;
+                drop(last_toggle);
+                
+                if let Some(window) = app.get_webview_window("main") {
+                    let shortcut_enabled = *state.shortcut_enabled.lock().unwrap();
+                    if !shortcut_enabled {
+                        return;
+                    }
+                    
+                    let mut is_hidden = state.is_hidden.lock().unwrap();
+                    
+                    if *is_hidden {
+                        // Load saved opacity from config when showing window
+                        let _ = window.emit("load-saved-opacity", ());
+                        let _ = window.set_ignore_cursor_events(false);
+                        *is_hidden = false;
+                    } else {
+                        let _ = set_window_opacity(app.clone(), 0.0);
+                        let _ = window.set_ignore_cursor_events(true);
+                        *is_hidden = true;
+                    }
+                }
+            })
+            .build())
+        .setup(|app| {
+            app.manage(AppState {
+                is_hidden: Mutex::new(false),
+                last_toggle: Mutex::new(std::time::Instant::now()),
+                current_shortcut: Mutex::new(None),
+                shortcut_enabled: Mutex::new(true),
+            });
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            set_window_opacity,
+            register_shortcut,
+            disable_shortcut,
+            enable_shortcut
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

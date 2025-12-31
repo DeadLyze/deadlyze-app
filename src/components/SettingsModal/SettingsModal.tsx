@@ -5,7 +5,9 @@ import { FiFolder } from "react-icons/fi";
 import { invoke } from "@tauri-apps/api/core";
 import packageJson from "../../../package.json";
 import SettingItem from "./SettingItem";
+import ShortcutInput from "../ShortcutInput/ShortcutInput";
 import { ConfigManager } from "../../utils/configManager";
+import { ShortcutManager } from "../../utils/shortcutManager";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -86,24 +88,27 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const [opacity, setOpacity] = useState<number | "">(OPACITY_DEFAULT);
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+  const [shortcut, setShortcut] = useState<string>("Alt+`");
+  const [previousShortcut, setPreviousShortcut] = useState<string>("Alt+`");
 
   useEffect(() => {
     setCurrentLanguage(i18n.language);
   }, [i18n.language]);
 
   useEffect(() => {
-    const loadOpacity = async () => {
+    const loadSettings = async () => {
       try {
         const settings = await ConfigManager.load();
         setOpacity(settings.opacity);
-        await invoke("set_window_opacity", { opacity: settings.opacity });
+        setShortcut(settings.shortcut);
+        setPreviousShortcut(settings.shortcut);
       } catch (error) {
-        console.error("Failed to load opacity:", error);
+        console.error("Failed to load settings:", error);
       }
     };
 
     if (isOpen) {
-      loadOpacity();
+      loadSettings();
     }
   }, [isOpen]);
 
@@ -136,7 +141,10 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       await i18n.changeLanguage(defaultSettings.language);
       setCurrentLanguage(defaultSettings.language);
       setOpacity(defaultSettings.opacity);
+      setShortcut(defaultSettings.shortcut);
+      setPreviousShortcut(defaultSettings.shortcut);
       await invoke("set_window_opacity", { opacity: defaultSettings.opacity });
+      await ShortcutManager.register(defaultSettings.shortcut);
     } catch (error) {
       console.error("Failed to reset settings:", error);
     }
@@ -163,7 +171,8 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   const handleOpacityBlur = async () => {
-    let finalValue = opacity;
+    let finalValue: number =
+      typeof opacity === "number" ? opacity : OPACITY_MIN;
     if (opacity === "" || opacity < OPACITY_MIN) {
       finalValue = OPACITY_MIN;
       setOpacity(OPACITY_MIN);
@@ -184,6 +193,47 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       await ConfigManager.update({ opacity: value });
     } catch (error) {
       console.error("Failed to update opacity:", error);
+    }
+  };
+
+  const handleShortcutChange = (newShortcut: string) => {
+    setShortcut(newShortcut);
+  };
+
+  const handleShortcutFocus = async () => {
+    try {
+      await ShortcutManager.disable();
+    } catch (error) {
+      console.error("Failed to disable shortcut:", error);
+    }
+  };
+
+  const handleShortcutBlur = async (newShortcut?: string) => {
+    const shortcutToSave = newShortcut || shortcut;
+
+    try {
+      await ShortcutManager.enable();
+    } catch (error) {
+      console.error("Failed to enable shortcut:", error);
+    }
+
+    if (!shortcutToSave || shortcutToSave === "...") {
+      setShortcut(previousShortcut);
+      return;
+    }
+
+    if (shortcutToSave === previousShortcut) {
+      return;
+    }
+
+    try {
+      await ConfigManager.update({ shortcut: shortcutToSave });
+      await ShortcutManager.update(shortcutToSave);
+      setPreviousShortcut(shortcutToSave);
+      setShortcut(shortcutToSave);
+    } catch (error) {
+      console.error("Failed to save shortcut:", error);
+      setShortcut(previousShortcut);
     }
   };
 
@@ -339,20 +389,12 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   title={t("settings.general.shortcut.title")}
                   description={t("settings.general.shortcut.description")}
                   control={
-                    <div
-                      className="px-4 py-2 rounded cursor-pointer transition-opacity hover:opacity-80"
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.08)",
-                        border: "1px solid rgba(255, 255, 255, 0.15)",
-                        color: "#C5C5C5",
-                        fontSize: "14px",
-                        fontWeight: 400,
-                        minWidth: "100px",
-                        textAlign: "center",
-                      }}
-                    >
-                      Alt + ~
-                    </div>
+                    <ShortcutInput
+                      value={shortcut}
+                      onChange={handleShortcutChange}
+                      onBlur={handleShortcutBlur}
+                      onFocus={handleShortcutFocus}
+                    />
                   }
                 />
 
