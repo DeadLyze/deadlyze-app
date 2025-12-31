@@ -482,6 +482,13 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   description={t("settings.other.appFolder.description")}
                   control={
                     <button
+                      onClick={async () => {
+                        try {
+                          await invoke("open_app_folder");
+                        } catch (error) {
+                          console.error("Failed to open app folder:", error);
+                        }
+                      }}
                       className="p-2 rounded transition-opacity hover:opacity-80"
                       style={{
                         backgroundColor: "rgba(255, 255, 255, 0.08)",

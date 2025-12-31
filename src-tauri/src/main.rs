@@ -83,6 +83,41 @@ fn enable_shortcut(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Opens the application data folder in file explorer
+#[tauri::command]
+fn open_app_folder(app: tauri::AppHandle) -> Result<(), String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(app_data_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(app_data_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(app_data_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {}", e))?;
+    }
+
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -138,7 +173,8 @@ fn main() {
             set_window_opacity,
             register_shortcut,
             disable_shortcut,
-            enable_shortcut
+            enable_shortcut,
+            open_app_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
