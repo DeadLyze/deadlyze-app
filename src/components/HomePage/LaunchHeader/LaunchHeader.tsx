@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
-import { ANIMATION_TIMINGS, GAME_STATUS_CHECK_INTERVAL } from "../../../constants";
+import {
+  ANIMATION_TIMINGS,
+  GAME_STATUS_CHECK_INTERVAL,
+} from "../../../constants";
 import { useGlitchEffect } from "../../../hooks";
 
 const GLITCH_END_BEFORE =
@@ -23,7 +26,7 @@ function LaunchHeader() {
   const [isRecoveringColor, setIsRecoveringColor] = useState(false);
 
   const originalText = t("home.launchButton");
-  const { startGlitch } = useGlitchEffect(originalText, GLITCH_DURATION);
+  const { startGlitch } = useGlitchEffect(GLITCH_DURATION);
 
   useEffect(() => {
     setDisplayText(t("home.launchButton"));
@@ -36,7 +39,7 @@ function LaunchHeader() {
       return;
     }
 
-    const cleanupGlitch = startGlitch(setDisplayText);
+    const cleanupGlitch = startGlitch(originalText, setDisplayText);
 
     const colorRecoveryTimeout = setTimeout(() => {
       setIsRecoveringColor(true);
@@ -46,7 +49,7 @@ function LaunchHeader() {
       cleanupGlitch();
       clearTimeout(colorRecoveryTimeout);
     };
-  }, [isLaunching, originalText, startGlitch]);
+  }, [isLaunching, originalText]);
 
   useEffect(() => {
     const checkGameStatus = async () => {
@@ -77,7 +80,10 @@ function LaunchHeader() {
       setIsHolding(false);
     }, ANIMATION_TIMINGS.BUTTON_PRESS_DURATION);
 
-    setTimeout(() => setIsSpinning(false), ANIMATION_TIMINGS.LOGO_SPIN_DURATION);
+    setTimeout(
+      () => setIsSpinning(false),
+      ANIMATION_TIMINGS.LOGO_SPIN_DURATION
+    );
 
     try {
       await invoke("launch_deadlock");
@@ -85,7 +91,10 @@ function LaunchHeader() {
       console.error("Failed to launch game:", error);
     }
 
-    setTimeout(() => setIsLaunching(false), ANIMATION_TIMINGS.COOLDOWN_DURATION);
+    setTimeout(
+      () => setIsLaunching(false),
+      ANIMATION_TIMINGS.COOLDOWN_DURATION
+    );
   };
 
   return (

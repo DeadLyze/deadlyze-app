@@ -1,12 +1,17 @@
 import { GLITCH_CONFIG } from "../constants";
 
 export const useGlitchEffect = (
-  text: string,
   duration: number
 ): {
-  startGlitch: (callback: (glitchedText: string) => void) => () => void;
+  startGlitch: (
+    text: string,
+    callback: (glitchedText: string) => void
+  ) => () => void;
 } => {
-  const startGlitch = (callback: (glitchedText: string) => void) => {
+  const startGlitch = (
+    text: string,
+    callback: (glitchedText: string) => void
+  ) => {
     const textArray = text.split("");
     const textLength = textArray.filter((c) => c !== " ").length;
     const waveLength = textLength + GLITCH_CONFIG.WAVE_OFFSET;
@@ -26,10 +31,13 @@ export const useGlitchEffect = (
 
       const wavePosition = frame % waveLength;
 
-      const result = textArray.map((char, index) => {
+      let charIndex = 0;
+      const result = textArray.map((char) => {
         if (char === " ") return " ";
 
-        const distance = Math.abs(index - wavePosition);
+        const distance = Math.abs(charIndex - wavePosition);
+        charIndex++;
+
         if (distance < GLITCH_CONFIG.DISTANCE_THRESHOLD) {
           const random = Math.random();
           if (random > GLITCH_CONFIG.RANDOM_THRESHOLD) {

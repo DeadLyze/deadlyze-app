@@ -10,7 +10,7 @@ export const ANIMATION_TIMINGS = {
 export const GLITCH_CONFIG = {
   CHARS: ["·", "-", "·"],
   FRAME_TIME: 60,
-  WAVE_OFFSET: 5,
+  WAVE_OFFSET: 0,
   DISTANCE_THRESHOLD: 3,
   RANDOM_THRESHOLD: 0.6,
 } as const;
