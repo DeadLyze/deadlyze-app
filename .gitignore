@@ -1,0 +1,27 @@
+# Tauri build outputs
+src-tauri/target/
+src-tauri/gen/
+
+# Node
+node_modules/
+dist/
+*.log
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Rust
+**/*.rs.bk
+*.pdb
+
+# User config
+config.json

@@ -1,0 +1,26 @@
+[package]
+name = "deadlock-api-scripts"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "batch_steam_profile"
+path = "batch_steam_profile.rs"
+
+[[bin]]
+name = "patch_notes"
+path = "patch_notes.rs"
+
+[[bin]]
+name = "badge_distribution"
+path = "badge_distribution.rs"
+
+[[bin]]
+name = "batch_mmr"
+path = "batch_mmr.rs"
+
+[dependencies]
+tokio = { version = "1.42", features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

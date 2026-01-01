@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap");
+
+* {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  outline: none;
+  font-family: "Roboto", sans-serif;
+}
+
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+#root {
+  outline: none;
+  border: none;
+}
