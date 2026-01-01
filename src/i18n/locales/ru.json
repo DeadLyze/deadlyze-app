@@ -1,4 +1,7 @@
 {
+  "home": {
+    "launchButton": "ЗАПУСТИТЬ DEADLOCK"
+  },
   "settings": {
     "title": "Настройки",
     "tabs": {

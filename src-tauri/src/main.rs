@@ -124,19 +124,17 @@ fn open_app_folder(app: tauri::AppHandle) -> Result<(), String> {
 /// Launches Deadlock game via Steam (App ID: 1422450)
 #[tauri::command]
 fn launch_deadlock() -> Result<(), String> {
-    // TEMPORARILY DISABLED FOR TESTING
-    // Uncomment to enable game launch
-    /*
     #[cfg(target_os = "windows")]
     {
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        
         std::process::Command::new("cmd")
             .args(["/C", "start", "steam://rungameid/1422450"])
+            .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
-    */
     
-    println!("Launch Deadlock called (disabled for testing)");
     Ok(())
 }
 

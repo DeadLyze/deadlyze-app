@@ -1,23 +1,33 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
+import { ANIMATION_TIMINGS, GAME_STATUS_CHECK_INTERVAL } from "../../../constants";
+import { useGlitchEffect } from "../../../hooks";
+
+const GLITCH_END_BEFORE =
+  ANIMATION_TIMINGS.PAUSE_AFTER_GLITCH +
+  ANIMATION_TIMINGS.COLOR_RECOVERY_DURATION +
+  ANIMATION_TIMINGS.BUTTON_READY_BUFFER;
+
+const GLITCH_DURATION = ANIMATION_TIMINGS.COOLDOWN_DURATION - GLITCH_END_BEFORE;
 
 function LaunchHeader() {
+  const { t, i18n } = useTranslation();
   const [isGameRunning, setIsGameRunning] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [displayText, setDisplayText] = useState("ЗАПУСТИТЬ DEADLOCK");
+  const [displayText, setDisplayText] = useState(t("home.launchButton"));
   const [isRecoveringColor, setIsRecoveringColor] = useState(false);
 
-  const originalText = "ЗАПУСТИТЬ DEADLOCK";
-  const COOLDOWN_DURATION = 5000;
-  const PAUSE_AFTER_GLITCH = 500;
-  const COLOR_RECOVERY_DURATION = 600;
-  const BUTTON_READY_BUFFER = 200;
-  const GLITCH_END_BEFORE = PAUSE_AFTER_GLITCH + COLOR_RECOVERY_DURATION + BUTTON_READY_BUFFER;
-  const GLITCH_DURATION = COOLDOWN_DURATION - GLITCH_END_BEFORE;
+  const originalText = t("home.launchButton");
+  const { startGlitch } = useGlitchEffect(originalText, GLITCH_DURATION);
+
+  useEffect(() => {
+    setDisplayText(t("home.launchButton"));
+  }, [i18n.language, t]);
 
   useEffect(() => {
     if (!isLaunching) {
@@ -26,53 +36,17 @@ function LaunchHeader() {
       return;
     }
 
-    const chars = ['·', '-', '·'];
-    const textArray = originalText.split('');
-    const textLength = textArray.filter(c => c !== ' ').length;
-    const waveLength = textLength + 5;
-    
-    const frameTime = 60;
-    const totalFrames = Math.floor(GLITCH_DURATION / frameTime);
-    const cyclesNeeded = Math.ceil(totalFrames / waveLength);
-    const adjustedFrameTime = GLITCH_DURATION / (cyclesNeeded * waveLength);
-    
-    let frame = 0;
-
-    const interval = setInterval(() => {
-      if (frame * adjustedFrameTime >= GLITCH_DURATION) {
-        setDisplayText(originalText);
-        clearInterval(interval);
-        return;
-      }
-
-      const wavePosition = frame % waveLength;
-
-      const result = textArray.map((char, index) => {
-        if (char === ' ') return ' ';
-        
-        const distance = Math.abs(index - wavePosition);
-        if (distance < 3) {
-          const random = Math.random();
-          if (random > 0.6) {
-            return chars[Math.floor(Math.random() * chars.length)];
-          }
-        }
-        return char;
-      });
-
-      setDisplayText(result.join(''));
-      frame++;
-    }, adjustedFrameTime);
+    const cleanupGlitch = startGlitch(setDisplayText);
 
     const colorRecoveryTimeout = setTimeout(() => {
       setIsRecoveringColor(true);
-    }, GLITCH_DURATION + PAUSE_AFTER_GLITCH);
+    }, GLITCH_DURATION + ANIMATION_TIMINGS.PAUSE_AFTER_GLITCH);
 
     return () => {
-      clearInterval(interval);
+      cleanupGlitch();
       clearTimeout(colorRecoveryTimeout);
     };
-  }, [isLaunching]);
+  }, [isLaunching, originalText, startGlitch]);
 
   useEffect(() => {
     const checkGameStatus = async () => {
@@ -85,14 +59,14 @@ function LaunchHeader() {
     };
 
     checkGameStatus();
-    const interval = setInterval(checkGameStatus, 3000);
+    const interval = setInterval(checkGameStatus, GAME_STATUS_CHECK_INTERVAL);
 
     return () => clearInterval(interval);
   }, []);
 
   const handleMouseDown = async () => {
     if (isGameRunning || isLaunching) return;
-    
+
     setIsPressed(true);
     setIsHolding(true);
     setIsLaunching(true);
@@ -101,9 +75,9 @@ function LaunchHeader() {
     setTimeout(() => {
       setIsPressed(false);
       setIsHolding(false);
-    }, 150);
+    }, ANIMATION_TIMINGS.BUTTON_PRESS_DURATION);
 
-    setTimeout(() => setIsSpinning(false), 3000);
+    setTimeout(() => setIsSpinning(false), ANIMATION_TIMINGS.LOGO_SPIN_DURATION);
 
     try {
       await invoke("launch_deadlock");
@@ -111,11 +85,7 @@ function LaunchHeader() {
       console.error("Failed to launch game:", error);
     }
 
-    setTimeout(() => setIsLaunching(false), COOLDOWN_DURATION);
-  };
-
-  const handleMouseUp = () => {
-    // Empty - logic moved to handleMouseDown
+    setTimeout(() => setIsLaunching(false), ANIMATION_TIMINGS.COOLDOWN_DURATION);
   };
 
   return (
@@ -144,7 +114,8 @@ function LaunchHeader() {
           WebkitTextFillColor: "transparent",
           backgroundClip: "text",
           lineHeight: "1.1",
-          filter: "drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.3)) drop-shadow(-1px -1px 2px rgba(255, 255, 255, 0.1))",
+          filter:
+            "drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.3)) drop-shadow(-1px -1px 2px rgba(255, 255, 255, 0.1))",
         }}
       >
         DeadLyze
@@ -203,46 +174,59 @@ function LaunchHeader() {
             }
           }}
           onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
           disabled={isGameRunning || isLaunching}
-          className="flex items-center justify-end pr-6"
+          className="flex items-center"
           style={{
             width: "350px",
             height: "85px",
             borderRadius: "42.5px",
-            background: isLaunching && !isRecoveringColor ? "#1a1f25" : "#10262F",
-            backgroundImage: isLaunching && !isRecoveringColor
-              ? "linear-gradient(135deg, rgba(60, 65, 70, 0.3) 15%, rgba(30, 30, 35, 0) 85%)"
-              : "linear-gradient(135deg, rgba(50, 194, 132, 0.26) 15%, rgba(40, 27, 101, 0) 85%)",
+            background:
+              isLaunching && !isRecoveringColor ? "#1a1f25" : "#10262F",
+            backgroundImage:
+              isLaunching && !isRecoveringColor
+                ? "linear-gradient(135deg, rgba(60, 65, 70, 0.3) 15%, rgba(30, 30, 35, 0) 85%)"
+                : "linear-gradient(135deg, rgba(50, 194, 132, 0.26) 15%, rgba(40, 27, 101, 0) 85%)",
             pointerEvents: isGameRunning ? "none" : "auto",
             cursor: isLaunching ? "default" : "pointer",
             boxShadow: isPressed
               ? "inset 4px 4px 9px rgba(0, 0, 0, 0.3), inset -4px -4px 10px rgba(0, 0, 0, 0.4)"
               : "inset 4px 4px 7px rgba(255, 255, 255, 0.06), inset -4px -4px 7px rgba(0, 0, 0, 0.25)",
-            filter: "drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.2)) drop-shadow(-0.5px -0.5px 1px rgba(255, 255, 255, 0.05))",
+            filter:
+              "drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.2)) drop-shadow(-0.5px -0.5px 1px rgba(255, 255, 255, 0.05))",
             transform: isPressed
               ? "translateY(2px) scale(0.98)"
               : "translateY(0) scale(1)",
             transition: isPressed
               ? "all 0.08s cubic-bezier(0.4, 0, 0.6, 1)"
               : isRecoveringColor
-              ? `all ${COLOR_RECOVERY_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`
+              ? `all ${ANIMATION_TIMINGS.COLOR_RECOVERY_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`
               : "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            paddingLeft: "72px",
           }}
         >
-          <span
+          <div
             style={{
-              color: isLaunching && !isRecoveringColor ? "#b0b5ba" : "#E6CA9C",
-              fontSize: "20px",
-              fontWeight: 900,
-              letterSpacing: "0.5px",
-              transition: isRecoveringColor 
-                ? `color ${COLOR_RECOVERY_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`
-                : "color 0.08s ease-out",
+              flex: 1,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            {displayText}
-          </span>
+            <span
+              style={{
+                color:
+                  isLaunching && !isRecoveringColor ? "#b0b5ba" : "#E6CA9C",
+                fontSize: "20px",
+                fontWeight: 900,
+                letterSpacing: "0.5px",
+                transition: isRecoveringColor
+                  ? `color ${ANIMATION_TIMINGS.COLOR_RECOVERY_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`
+                  : "color 0.08s ease-out",
+              }}
+            >
+              {displayText}
+            </span>
+          </div>
         </button>
       </div>
     </div>

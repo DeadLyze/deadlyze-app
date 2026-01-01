@@ -324,7 +324,7 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <p
                 style={{ color: "#6B5943", fontSize: "11px", fontWeight: 500 }}
               >
-                30.12.2025
+                01.01.2026
               </p>
             </div>
           </div>
