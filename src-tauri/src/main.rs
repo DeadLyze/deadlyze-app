@@ -4,6 +4,9 @@
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 /// Global application state
 struct AppState {
     /// Window hidden flag (via shortcut)
@@ -142,11 +145,16 @@ fn launch_deadlock() -> Result<(), String> {
 fn is_deadlock_running() -> Result<bool, String> {
     #[cfg(target_os = "windows")]
     {
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        
         let output = std::process::Command::new("powershell")
             .args([
+                "-NoProfile",
+                "-NonInteractive",
                 "-Command",
                 "Get-Process -Name 'project8' -ErrorAction SilentlyContinue | Select-Object -First 1",
             ])
+            .creation_flags(CREATE_NO_WINDOW)
             .output()
             .map_err(|e| e.to_string())?;
 
