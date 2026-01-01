@@ -1,4 +1,7 @@
 {
+  "home": {
+    "launchButton": "LAUNCH DEADLOCK"
+  },
   "settings": {
     "title": "Settings",
     "tabs": {

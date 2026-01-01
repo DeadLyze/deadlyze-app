@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import Sidebar from "./components/Sidebar/Sidebar";
-import PageContainer from "./components/PageContainer/PageContainer";
-import WindowControls from "./components/WindowControls/WindowControls";
+import Sidebar from "./components/Layout/Sidebar/Sidebar";
+import PageContainer from "./components/Layout/PageContainer/PageContainer";
+import WindowControls from "./components/Layout/WindowControls/WindowControls";
 import { ConfigManager } from "./utils/configManager";
 import { ShortcutManager } from "./utils/shortcutManager";
 import i18n from "./i18n/config";
