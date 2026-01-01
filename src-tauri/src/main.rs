@@ -118,6 +118,46 @@ fn open_app_folder(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Launches Deadlock game via Steam (App ID: 1422450)
+#[tauri::command]
+fn launch_deadlock() -> Result<(), String> {
+    // TEMPORARILY DISABLED FOR TESTING
+    // Uncomment to enable game launch
+    /*
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "steam://rungameid/1422450"])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    */
+    
+    println!("Launch Deadlock called (disabled for testing)");
+    Ok(())
+}
+
+/// Checks if Deadlock game is currently running
+#[tauri::command]
+fn is_deadlock_running() -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = std::process::Command::new("powershell")
+            .args([
+                "-Command",
+                "Get-Process -Name 'project8' -ErrorAction SilentlyContinue | Select-Object -First 1",
+            ])
+            .output()
+            .map_err(|e| e.to_string())?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        Ok(!stdout.trim().is_empty())
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    Ok(false)
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -231,7 +271,9 @@ fn main() {
             register_shortcut,
             disable_shortcut,
             enable_shortcut,
-            open_app_folder
+            open_app_folder,
+            launch_deadlock,
+            is_deadlock_running
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
