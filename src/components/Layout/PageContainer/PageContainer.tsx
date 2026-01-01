@@ -1,4 +1,4 @@
-import HomePage from "../../pages/HomePage/HomePage";
+import HomePage from "../../../pages/HomePage/HomePage";
 
 function PageContainer() {
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -7,7 +7,7 @@ function PageContainer() {
 
   return (
     <main
-      className="flex-1 h-screen bg-[#1a1a1a] flex flex-col"
+      className="flex-1 h-screen bg-[#1a1a1a] relative"
       style={{
         backgroundImage: "url(/assets/background.png)",
         backgroundSize: "cover",
@@ -16,7 +16,10 @@ function PageContainer() {
       }}
       onContextMenu={handleContextMenu}
     >
-      <div className="h-[50px] w-full" data-tauri-drag-region></div>
+      <div
+        className="absolute top-0 left-0 w-full h-[50px] z-[9997]"
+        data-tauri-drag-region
+      ></div>
       <HomePage />
     </main>
   );

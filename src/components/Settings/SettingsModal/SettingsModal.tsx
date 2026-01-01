@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 import { RxCross2 } from "react-icons/rx";
 import { FiFolder } from "react-icons/fi";
 import { invoke } from "@tauri-apps/api/core";
-import packageJson from "../../../package.json";
-import SettingItem from "./SettingItem";
+import packageJson from "../../../../package.json";
+import SettingItem from "../SettingItem/SettingItem";
 import ShortcutInput from "../ShortcutInput/ShortcutInput";
-import { ConfigManager } from "../../utils/configManager";
-import { ShortcutManager } from "../../utils/shortcutManager";
+import { ConfigManager } from "../../../utils/configManager";
+import { ShortcutManager } from "../../../utils/shortcutManager";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -16,7 +16,6 @@ interface SettingsModalProps {
 
 type SettingsTab = "general" | "other";
 
-// Constants
 const OPACITY_MIN = 20;
 const OPACITY_MAX = 100;
 const OPACITY_DEFAULT = 100;
@@ -355,7 +354,6 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </h1>
             {activeTab === "general" ? (
               <div className="flex-1 flex flex-col gap-6">
-                {/* Language setting */}
                 <SettingItem
                   title={t("settings.general.language.title")}
                   description={t("settings.general.language.description")}
@@ -384,7 +382,6 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   }
                 />
 
-                {/* Shortcut setting */}
                 <SettingItem
                   title={t("settings.general.shortcut.title")}
                   description={t("settings.general.shortcut.description")}
@@ -398,7 +395,6 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   }
                 />
 
-                {/* Opacity setting */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-start justify-between gap-6">
                     <div className="flex-1">
@@ -476,7 +472,6 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             ) : (
               <div className="flex-1 flex flex-col gap-6">
-                {/* Open app folder setting */}
                 <SettingItem
                   title={t("settings.other.appFolder.title")}
                   description={t("settings.other.appFolder.description")}

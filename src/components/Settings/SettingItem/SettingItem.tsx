@@ -6,7 +6,6 @@ interface SettingItemProps {
   control: ReactNode;
 }
 
-// Reusable setting item component with title, description and control
 function SettingItem({ title, description, control }: SettingItemProps) {
   return (
     <div className="flex items-start justify-between gap-6">

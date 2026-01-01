@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FiSettings } from "react-icons/fi";
-import SettingsModal from "../SettingsModal/SettingsModal";
+import SettingsModal from "../../Settings/SettingsModal/SettingsModal";
 
 function Sidebar() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
