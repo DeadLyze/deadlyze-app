@@ -97,6 +97,8 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
             fontSize: "38px",
             fontWeight: 900,
             letterSpacing: "1px",
+            textShadow:
+              "0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4)",
           }}
         >
           {t("activeMatch.searchForm.title")}
@@ -107,6 +109,7 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
             color: "#9FA6AD",
             fontSize: "13px",
             fontWeight: 400,
+            textShadow: "0 1px 4px rgba(0, 0, 0, 0.3)",
           }}
         >
           {t("activeMatch.searchForm.subtitle")}
@@ -131,6 +134,8 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
               }}
               onKeyDown={(e) => handleKeyDown(index, e)}
               onPaste={index === 0 ? handlePaste : undefined}
+              onDragStart={(e) => e.preventDefault()}
+              draggable={false}
               className="text-center transition-all focus:outline-none digit-input"
               style={{
                 width: "48px",

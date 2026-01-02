@@ -7,6 +7,8 @@ use tauri::{Emitter, Manager};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 
+mod match_parser;
+
 /// Global application state
 struct AppState {
     /// Window hidden flag (via shortcut)
@@ -306,6 +308,15 @@ fn get_steam_info() -> Result<SteamInfo, String> {
     })
 }
 
+/// Fetch live match player data
+#[tauri::command]
+async fn fetch_match_data(match_id: String) -> Result<match_parser::MatchData, String> {
+    let match_id_num = match_id.parse::<u64>()
+        .map_err(|_| "Invalid match ID format".to_string())?;
+    
+    match_parser::fetch_match_players(match_id_num).await
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -422,7 +433,8 @@ fn main() {
             open_app_folder,
             launch_deadlock,
             is_deadlock_running,
-            get_steam_info
+            get_steam_info,
+            fetch_match_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

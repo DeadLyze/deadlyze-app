@@ -43,7 +43,7 @@ function LaunchHeader() {
 
     const colorRecoveryTimeout = setTimeout(() => {
       setIsRecoveringColor(true);
-    }, GLITCH_DURATION + ANIMATION_TIMINGS.PAUSE_AFTER_GLITCH);
+    }, ANIMATION_TIMINGS.COOLDOWN_DURATION - ANIMATION_TIMINGS.COLOR_RECOVERY_DURATION);
 
     return () => {
       cleanupGlitch();
@@ -93,7 +93,8 @@ function LaunchHeader() {
 
     setTimeout(
       () => setIsLaunching(false),
-      ANIMATION_TIMINGS.COOLDOWN_DURATION
+      ANIMATION_TIMINGS.COOLDOWN_DURATION -
+        ANIMATION_TIMINGS.BUTTON_READY_BUFFER
     );
   };
 
@@ -111,6 +112,48 @@ function LaunchHeader() {
           
           .logo-spin {
             animation: spin-decelerate 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          }
+          
+          .launch-button {
+            position: relative;
+            overflow: hidden;
+          }
+          
+          .launch-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(50, 194, 132, 0.26) 15%, rgba(16, 38, 47, 1) 85%);
+            opacity: ${isRecoveringColor ? 1 : isLaunching ? 0 : 1};
+            transition: opacity ${
+              isRecoveringColor
+                ? ANIMATION_TIMINGS.COLOR_RECOVERY_DURATION
+                : 150
+            }ms cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: 1;
+            border-radius: 42.5px;
+          }
+          
+          .launch-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            box-shadow: ${
+              isPressed
+                ? "inset 4px 4px 9px rgba(0, 0, 0, 0.3), inset -4px -4px 10px rgba(0, 0, 0, 0.4)"
+                : "inset 4px 4px 7px rgba(255, 255, 255, 0.06), inset -4px -4px 7px rgba(0, 0, 0, 0.25)"
+            };
+            pointer-events: none;
+            z-index: 2;
+            border-radius: 42.5px;
+            transition: box-shadow 0.08s cubic-bezier(0.4, 0, 0.6, 1);
           }
         `}
       </style>
@@ -184,22 +227,16 @@ function LaunchHeader() {
           }}
           onMouseDown={handleMouseDown}
           disabled={isGameRunning || isLaunching}
-          className="flex items-center"
+          className="flex items-center launch-button"
           style={{
             width: "350px",
             height: "85px",
             borderRadius: "42.5px",
-            background:
-              isLaunching && !isRecoveringColor ? "#1a1f25" : "#10262F",
+            background: "#1a1f25",
             backgroundImage:
-              isLaunching && !isRecoveringColor
-                ? "linear-gradient(135deg, rgba(60, 65, 70, 0.3) 15%, rgba(30, 30, 35, 0) 85%)"
-                : "linear-gradient(135deg, rgba(50, 194, 132, 0.26) 15%, rgba(40, 27, 101, 0) 85%)",
+              "linear-gradient(135deg, rgba(60, 65, 70, 0.3) 15%, rgba(30, 30, 35, 0) 85%)",
             pointerEvents: isGameRunning ? "none" : "auto",
             cursor: isLaunching ? "default" : "pointer",
-            boxShadow: isPressed
-              ? "inset 4px 4px 9px rgba(0, 0, 0, 0.3), inset -4px -4px 10px rgba(0, 0, 0, 0.4)"
-              : "inset 4px 4px 7px rgba(255, 255, 255, 0.06), inset -4px -4px 7px rgba(0, 0, 0, 0.25)",
             filter:
               "drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.2)) drop-shadow(-0.5px -0.5px 1px rgba(255, 255, 255, 0.05))",
             transform: isPressed
@@ -207,8 +244,6 @@ function LaunchHeader() {
               : "translateY(0) scale(1)",
             transition: isPressed
               ? "all 0.08s cubic-bezier(0.4, 0, 0.6, 1)"
-              : isRecoveringColor
-              ? `all ${ANIMATION_TIMINGS.COLOR_RECOVERY_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`
               : "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
             paddingLeft: "72px",
           }}
@@ -219,6 +254,8 @@ function LaunchHeader() {
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
+              position: "relative",
+              zIndex: 3,
             }}
           >
             <span
