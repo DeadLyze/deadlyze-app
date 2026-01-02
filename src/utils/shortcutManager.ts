@@ -1,33 +1,33 @@
 import { invoke } from "@tauri-apps/api/core";
 
 /**
- * Утилита для управления глобальными шорткатами
+ * Utility for managing global shortcuts
  */
 export class ShortcutManager {
   /**
-   * Регистрирует глобальный шорткат
+   * Registers a global shortcut
    */
   static async register(shortcut: string): Promise<void> {
     await invoke("register_shortcut", { shortcut });
   }
 
   /**
-   * Временно отключает обработку шорткатов
-   * (используется при редактировании в UI)
+   * Temporarily disables shortcut handling
+   * (used during UI editing)
    */
   static async disable(): Promise<void> {
     await invoke("disable_shortcut");
   }
 
   /**
-   * Включает обработку шорткатов обратно
+   * Re-enables shortcut handling
    */
   static async enable(): Promise<void> {
     await invoke("enable_shortcut");
   }
 
   /**
-   * Обновляет шорткат (отменяет старый и регистрирует новый)
+   * Updates the shortcut (unregisters old and registers new)
    */
   static async update(newShortcut: string): Promise<void> {
     await this.register(newShortcut);

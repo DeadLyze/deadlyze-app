@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RxCross2 } from "react-icons/rx";
-import { FiFolder } from "react-icons/fi";
+import { FiFolder, FiRefreshCw } from "react-icons/fi";
 import { invoke } from "@tauri-apps/api/core";
 import packageJson from "../../../../package.json";
 import SettingItem from "../SettingItem/SettingItem";
 import ShortcutInput from "../ShortcutInput/ShortcutInput";
 import { ConfigManager } from "../../../utils/configManager";
 import { ShortcutManager } from "../../../utils/shortcutManager";
+import { SteamService } from "../../../services/SteamService";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -89,10 +90,22 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
   const [shortcut, setShortcut] = useState<string>("Alt+`");
   const [previousShortcut, setPreviousShortcut] = useState<string>("Alt+`");
+  const [steamInfo, setSteamInfo] = useState<string>("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     setCurrentLanguage(i18n.language);
-  }, [i18n.language]);
+
+    // Update Steam info text when language changes
+    const userInfo = SteamService.getCurrentUserInfo();
+    const formattedInfo = SteamService.formatSteamInfoForDisplay(
+      t("settings.other.steamInfo.notDetected"),
+      (personaName, accountId) =>
+        t("settings.other.steamInfo.detected", { personaName, accountId }),
+      userInfo
+    );
+    setSteamInfo(formattedInfo);
+  }, [i18n.language, t]);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -108,8 +121,40 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
     if (isOpen) {
       loadSettings();
+      loadSteamInfo();
     }
-  }, [isOpen]);
+  }, [isOpen, t]);
+
+  const loadSteamInfo = async () => {
+    try {
+      const userInfo = SteamService.getCurrentUserInfo();
+
+      const formattedInfo = SteamService.formatSteamInfoForDisplay(
+        t("settings.other.steamInfo.notDetected"),
+        (personaName, accountId) =>
+          t("settings.other.steamInfo.detected", { personaName, accountId }),
+        userInfo
+      );
+      setSteamInfo(formattedInfo);
+    } catch (error) {
+      console.error("Failed to load Steam info:", error);
+      setSteamInfo(t("settings.other.steamInfo.error"));
+    }
+  };
+
+  const handleRefreshSteam = async () => {
+    setIsRefreshing(true);
+
+    try {
+      await SteamService.detectSteam();
+      await loadSteamInfo();
+    } catch (error) {
+      console.error("Failed to refresh Steam info:", error);
+      setSteamInfo(t("settings.other.steamInfo.error"));
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -472,6 +517,27 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             ) : (
               <div className="flex-1 flex flex-col gap-6">
+                <SettingItem
+                  title={t("settings.other.steamInfo.title")}
+                  description={steamInfo}
+                  control={
+                    <button
+                      onClick={handleRefreshSteam}
+                      disabled={isRefreshing}
+                      className="p-2 rounded transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.08)",
+                        border: "1px solid rgba(255, 255, 255, 0.15)",
+                      }}
+                    >
+                      <FiRefreshCw
+                        size={20}
+                        color="#C5C5C5"
+                        className={isRefreshing ? "animate-spin" : ""}
+                      />
+                    </button>
+                  }
+                />
                 <SettingItem
                   title={t("settings.other.appFolder.title")}
                   description={t("settings.other.appFolder.description")}
