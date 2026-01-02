@@ -30,6 +30,12 @@
     },
     "other": {
       "title": "Прочие настройки",
+      "steamInfo": {
+        "title": "Информация Steam",
+        "notDetected": "Текущий Steam не обнаружен",
+        "detected": "Текущий Steam аккаунт: {{personaName}} - {{accountId}}",
+        "error": "Ошибка при получении информации Steam"
+      },
       "appFolder": {
         "title": "Папка приложения",
         "description": "Открыть папку с файлами приложения в проводнике"

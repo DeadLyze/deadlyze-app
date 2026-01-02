@@ -6,16 +6,20 @@ import PageContainer from "./components/Layout/PageContainer/PageContainer";
 import WindowControls from "./components/Layout/WindowControls/WindowControls";
 import { ConfigManager } from "./utils/configManager";
 import { ShortcutManager } from "./utils/shortcutManager";
+import { CacheService } from "./services/CacheService";
+import { SteamService } from "./services/SteamService";
 import i18n from "./i18n/config";
 
 function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        CacheService.init();
         const settings = await ConfigManager.load();
         await i18n.changeLanguage(settings.language);
         await invoke("set_window_opacity", { opacity: settings.opacity });
         await ShortcutManager.register(settings.shortcut);
+        await SteamService.detectSteam();
       } catch (error) {
         console.error("Failed to initialize app:", error);
       }

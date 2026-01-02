@@ -164,6 +164,148 @@ fn is_deadlock_running() -> Result<bool, String> {
     Ok(false)
 }
 
+#[derive(serde::Serialize)]
+struct SteamInfo {
+    is_installed: bool,
+    install_path: Option<String>,
+    steam_id64: Option<String>,
+    persona_name: Option<String>,
+    is_running: bool,
+}
+
+/// Detects Steam installation and current user
+#[tauri::command]
+fn get_steam_info() -> Result<SteamInfo, String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::fs;
+        use std::path::PathBuf;
+        
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        
+        // Try to find Steam path from registry
+        let registry_paths = [
+            r"HKEY_CURRENT_USER\Software\Valve\Steam",
+            r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Valve\Steam",
+            r"HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam",
+        ];
+        
+        let mut install_path: Option<String> = None;
+        
+        for reg_path in registry_paths.iter() {
+            let output = std::process::Command::new("reg")
+                .args(["query", reg_path, "/v", "InstallPath", "/t", "REG_SZ"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output();
+            
+            if let Ok(output) = output {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                
+                if let Some(line) = stdout.lines().find(|l| l.contains("InstallPath")) {
+                    if let Some(path) = line.split("REG_SZ").nth(1) {
+                        let path = path.trim();
+                        
+                        if !path.is_empty() && PathBuf::from(path).exists() {
+                            install_path = Some(path.to_string());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        let is_installed = install_path.is_some();
+        
+        // Check if Steam is running
+        let is_running = if is_installed {
+            let output = std::process::Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-Command",
+                    "Get-Process -Name 'steam' -ErrorAction SilentlyContinue | Select-Object -First 1",
+                ])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+                .map_err(|e| e.to_string())?;
+            
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            !stdout.trim().is_empty()
+        } else {
+            false
+        };
+        
+        // Try to get current Steam user
+        let mut steam_id64: Option<String> = None;
+        let mut persona_name: Option<String> = None;
+        
+        if let Some(ref path) = install_path {
+            let loginusers_path = PathBuf::from(path).join("config").join("loginusers.vdf");
+            
+            if loginusers_path.exists() {
+                if let Ok(content) = fs::read_to_string(&loginusers_path) {
+                    // Parse loginusers.vdf to find the most recent user
+                    let mut current_id: Option<String> = None;
+                    let mut current_name: Option<String> = None;
+                    let mut is_most_recent = false;
+                    
+                    for line in content.lines() {
+                        let line = line.trim();
+                        
+                        // Find Steam ID (17 digit number in quotes)
+                        if line.starts_with('"') && line.ends_with('"') {
+                            let id = line.trim_matches('"');
+                            if id.len() == 17 && id.chars().all(|c| c.is_numeric()) {
+                                current_id = Some(id.to_string());
+                                current_name = None;
+                                is_most_recent = false;
+                            }
+                        }
+                        
+                        // Find PersonaName
+                        if line.contains("\"PersonaName\"") {
+                            if let Some(name_part) = line.split("\"PersonaName\"").nth(1) {
+                                if let Some(name) = name_part.split('"').nth(1) {
+                                    current_name = Some(name.to_string());
+                                }
+                            }
+                        }
+                        
+                        // Check if MostRecent
+                        if line.contains("\"MostRecent\"") && line.contains("\"1\"") {
+                            is_most_recent = true;
+                        }
+                        
+                        // If we found a complete most recent user, save it
+                        if is_most_recent && current_id.is_some() && current_name.is_some() {
+                            steam_id64 = current_id.clone();
+                            persona_name = current_name.clone();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(SteamInfo {
+            is_installed,
+            install_path,
+            steam_id64,
+            persona_name,
+            is_running,
+        })
+    }
+    
+    #[cfg(not(target_os = "windows"))]
+    Ok(SteamInfo {
+        is_installed: false,
+        install_path: None,
+        steam_id64: None,
+        persona_name: None,
+        is_running: false,
+    })
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -279,7 +421,8 @@ fn main() {
             enable_shortcut,
             open_app_folder,
             launch_deadlock,
-            is_deadlock_running
+            is_deadlock_running,
+            get_steam_info
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

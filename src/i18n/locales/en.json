@@ -30,6 +30,12 @@
     },
     "other": {
       "title": "Other Settings",
+      "steamInfo": {
+        "title": "Steam Information",
+        "notDetected": "Current Steam not detected",
+        "detected": "Current Steam account: {{personaName}} - {{accountId}}",
+        "error": "Error retrieving Steam information"
+      },
       "appFolder": {
         "title": "Application Folder",
         "description": "Open application folder in file explorer"
