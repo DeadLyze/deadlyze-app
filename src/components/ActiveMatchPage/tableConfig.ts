@@ -9,19 +9,19 @@ export const MATCH_TABLE_COLUMNS: ColumnConfig[] = [
   {
     id: "hero",
     label: "Hero",
-    flex: "0 0 80px",
+    flex: "0 0 50px",
     align: "center",
   },
   {
     id: "rank",
     label: "Rank",
-    flex: "0 0 80px",
+    flex: "0 0 75px",
     align: "center",
   },
   {
     id: "player",
     label: "Player",
-    flex: "1 1 0",
+    flex: "0 0 150px",
     align: "left",
   },
   {

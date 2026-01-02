@@ -5,9 +5,15 @@ import { MATCH_TABLE_COLUMNS } from "./tableConfig";
 
 interface TeamTableProps {
   players: MatchPlayer[];
+  heroIconUrls?: Map<number, string>;
+  rankImageUrls?: Map<number, string>;
 }
 
-export const TeamTable: React.FC<TeamTableProps> = ({ players }) => {
+export const TeamTable: React.FC<TeamTableProps> = ({
+  players,
+  heroIconUrls,
+  rankImageUrls,
+}) => {
   const renderColumnContent = (
     columnId: string,
     player: MatchPlayer,
@@ -15,31 +21,39 @@ export const TeamTable: React.FC<TeamTableProps> = ({ players }) => {
   ) => {
     switch (columnId) {
       case "hero":
-        return (
-          <div className="w-12 h-12 rounded-md bg-gradient-to-br from-[#21c271]/20 to-[#174842]/40 border border-[#21c271]/30 flex items-center justify-center">
-            <span className="text-[#21c271] font-semibold text-xs">
-              {player.hero_id || "?"}
-            </span>
-          </div>
+        const heroIconUrl = heroIconUrls?.get(player.hero_id);
+        return heroIconUrl ? (
+          <img
+            src={heroIconUrl}
+            alt={`Hero ${player.hero_id}`}
+            className="w-full h-full object-contain"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-[#e6ca9c]/40">?</span>
         );
 
       case "rank":
-        return (
-          <div className="w-12 h-12 rounded-md bg-gradient-to-br from-[#e6ca9c]/20 to-[#174842]/40 border border-[#e6ca9c]/30 flex items-center justify-center">
-            <span className="text-[#e6ca9c] font-semibold text-xs">?</span>
-          </div>
+        const rankImageUrl = rankImageUrls?.get(player.account_id);
+        return rankImageUrl ? (
+          <img
+            src={rankImageUrl}
+            alt="Rank"
+            className="max-h-[50px] w-auto object-contain"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-[#e6ca9c]/40">?</span>
         );
 
       case "player":
         return (
-          <div className="flex flex-col gap-1">
-            <span className="text-[#e6ca9c] font-medium">
-              {player.steam_name || "Unknown"}
-            </span>
-            <span className="text-[#e6ca9c]/50 text-xs">
-              ID: {player.account_id || "N/A"}
-            </span>
-          </div>
+          <span
+            className="text-[#e6ca9c] font-medium overflow-hidden text-ellipsis whitespace-nowrap w-full block"
+            title={player.steam_name || "Unknown"}
+          >
+            {player.steam_name || "Unknown"}
+          </span>
         );
 
       case "matches":
@@ -59,6 +73,7 @@ export const TeamTable: React.FC<TeamTableProps> = ({ players }) => {
               key={column.id}
               flex={column.flex}
               className={column.align === "left" ? "justify-start" : ""}
+              noPadding={column.id === "hero" || column.id === "rank"}
             >
               {renderColumnContent(column.id, player, index)}
             </TableColumn>

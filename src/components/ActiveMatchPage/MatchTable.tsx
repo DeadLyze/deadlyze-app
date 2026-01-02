@@ -6,6 +6,7 @@ interface TableColumnProps {
   flex?: string;
   align?: "left" | "center" | "right";
   isLast?: boolean;
+  noPadding?: boolean;
 }
 
 export const TableColumn: React.FC<TableColumnProps> = ({
@@ -14,6 +15,7 @@ export const TableColumn: React.FC<TableColumnProps> = ({
   flex = "1",
   align = "center",
   isLast = false,
+  noPadding = false,
 }) => {
   const alignmentClass =
     align === "left"
@@ -24,10 +26,13 @@ export const TableColumn: React.FC<TableColumnProps> = ({
 
   return (
     <div
-      className={`flex items-center px-3 py-2 text-[#e6ca9c] text-sm border-r border-[#21c271]/10 last:border-r-0 ${alignmentClass} ${
+      className={`flex items-center text-[#e6ca9c] text-sm border-r border-[#21c271]/10 last:border-r-0 ${alignmentClass} ${
         isLast ? "ml-auto" : ""
-      } ${className}`}
-      style={{ flex }}
+      } ${noPadding ? "" : "px-3 py-2"} ${className}`}
+      style={{
+        flex,
+        overflow: "hidden", // Allow text-ellipsis to work in children
+      }}
     >
       {children}
     </div>

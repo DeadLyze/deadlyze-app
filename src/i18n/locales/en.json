@@ -8,6 +8,14 @@
       "subtitle": "Match ID is located in the bottom right corner",
       "searchButton": "SEARCH MATCH",
       "error": "An error occurred while loading match data"
+    },
+    "table": {
+      "columns": {
+        "hero": "HERO",
+        "rank": "RANK",
+        "player": "PLAYER",
+        "matches": "MATCHES"
+      }
     }
   },
   "settings": {
