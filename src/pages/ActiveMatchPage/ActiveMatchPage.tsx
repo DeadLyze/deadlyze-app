@@ -1,10 +1,6 @@
-import { useState } from "react";
 import MatchSearchInput from "../../components/ActiveMatchPage/MatchSearchInput/MatchSearchInput";
 
 function ActiveMatchPage() {
-  const [matchData, setMatchData] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleSearch = async (matchId: string) => {
     console.log("Searching for match:", matchId);
     // TODO: Implement API call to fetch match data

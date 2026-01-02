@@ -20,6 +20,8 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
 
     if (newValue && index < 7) {
       inputRefs.current[index + 1]?.focus();
+    } else if (newValue && index === 7) {
+      inputRefs.current[index]?.select();
     }
   };
 
@@ -30,13 +32,21 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
     if (e.key === "Enter" && digits.every((d) => d !== "")) {
       handleSubmit();
     }
-    if (e.key === "ArrowLeft" && index > 0) {
+    if (e.key === "ArrowLeft") {
       e.preventDefault();
-      inputRefs.current[index - 1]?.focus();
+      if (index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      } else {
+        inputRefs.current[index]?.select();
+      }
     }
-    if (e.key === "ArrowRight" && index < 7) {
+    if (e.key === "ArrowRight") {
       e.preventDefault();
-      inputRefs.current[index + 1]?.focus();
+      if (index < 7) {
+        inputRefs.current[index + 1]?.focus();
+      } else {
+        inputRefs.current[index]?.select();
+      }
     }
   };
 
