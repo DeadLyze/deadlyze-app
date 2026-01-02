@@ -19,8 +19,13 @@ path = "badge_distribution.rs"
 name = "batch_mmr"
 path = "batch_mmr.rs"
 
+[[bin]]
+name = "live_match_players"
+path = "live_match_players.rs"
+
 [dependencies]
 tokio = { version = "1.42", features = ["full"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.13.1", default-features = false, features = ["json", "http2", "gzip", "native-tls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+haste = { git = "https://github.com/deadlock-api/haste.git", rev = "51722e61b184fc9f7ad32fad5887092017a59d92" }
