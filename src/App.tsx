@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import Sidebar from "./components/Layout/Sidebar/Sidebar";
@@ -11,6 +11,7 @@ import { SteamService } from "./services/SteamService";
 import i18n from "./i18n/config";
 
 function App() {
+  const [activePage, setActivePage] = useState<"home" | "active-match">("home");
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -51,8 +52,8 @@ function App() {
 
   return (
     <div className="flex w-screen h-screen overflow-hidden">
-      <Sidebar />
-      <PageContainer />
+      <Sidebar activePage={activePage} onPageChange={setActivePage} />
+      <PageContainer activePage={activePage} />
       <WindowControls />
     </div>
   );

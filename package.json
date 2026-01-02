@@ -1,7 +1,7 @@
 {
   "name": "deadlyze-app",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "dependencies": {
     "@tauri-apps/api": "^2.9.1",
