@@ -2,6 +2,13 @@
   "home": {
     "launchButton": "LAUNCH DEADLOCK"
   },
+  "activeMatch": {
+    "searchForm": {
+      "title": "ENTER MATCH ID",
+      "subtitle": "Match ID is located in the bottom right corner",
+      "searchButton": "SEARCH MATCH"
+    }
+  },
   "settings": {
     "title": "Settings",
     "tabs": {

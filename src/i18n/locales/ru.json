@@ -2,6 +2,13 @@
   "home": {
     "launchButton": "ЗАПУСТИТЬ DEADLOCK"
   },
+  "activeMatch": {
+    "searchForm": {
+      "title": "ВВЕДИТЕ АЙДИ МАТЧА",
+      "subtitle": "Айди матча находится в правом нижнем углу",
+      "searchButton": "ПОИСК МАТЧА"
+    }
+  },
   "settings": {
     "title": "Настройки",
     "tabs": {
