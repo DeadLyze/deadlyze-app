@@ -1,5 +1,6 @@
 import { useState, useRef, KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { SEARCH_BUTTON_CONFIG } from "../tableConfig";
 
 interface MatchSearchInputProps {
   onSearch: (matchId: string) => void;
@@ -9,6 +10,8 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
   const { t } = useTranslation();
   const [digits, setDigits] = useState<string[]>(Array(8).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [isOnCooldown, setIsOnCooldown] = useState(false);
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -29,7 +32,8 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
     if (e.key === "Backspace" && !digits[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
-    if (e.key === "Enter" && digits.every((d) => d !== "")) {
+    if (e.key === "Enter" && digits.every((d) => d !== "") && !isOnCooldown) {
+      triggerButtonAnimation();
       handleSubmit();
     }
     if (e.key === "ArrowLeft") {
@@ -68,10 +72,41 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
     inputRefs.current[index]?.select();
   };
 
+  const triggerButtonAnimation = () => {
+    if (!buttonRef.current) return;
+
+    const button = buttonRef.current;
+
+    // Apply press animation
+    button.style.boxShadow =
+      "inset 4px 4px 9px rgba(0, 0, 0, 0.5), inset -4px -4px 10px rgba(0, 0, 0, 0.6)";
+    button.style.filter = "none";
+    button.style.transform = "translateY(2px) scale(0.98)";
+    button.style.transition = "all 0.08s cubic-bezier(0.4, 0, 0.6, 1)";
+
+    // Release animation after duration
+    setTimeout(() => {
+      button.style.boxShadow =
+        "inset 4px 4px 7px rgba(255, 255, 255, 0.06), inset -4px -4px 7px rgba(0, 0, 0, 0.25)";
+      button.style.filter =
+        "drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.2)) drop-shadow(-0.5px -0.5px 1px rgba(255, 255, 255, 0.05))";
+      button.style.transform = "translateY(0) scale(1)";
+      button.style.transition = "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)";
+    }, SEARCH_BUTTON_CONFIG.ANIMATION_DURATION);
+  };
+
   const handleSubmit = () => {
+    if (isOnCooldown) return;
+
     const matchId = digits.join("");
     if (matchId.length === 8) {
+      setIsOnCooldown(true);
       onSearch(matchId);
+
+      // Reset cooldown after duration
+      setTimeout(() => {
+        setIsOnCooldown(false);
+      }, SEARCH_BUTTON_CONFIG.COOLDOWN_DURATION);
     }
   };
 
@@ -162,8 +197,9 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
           ))}
         </div>
         <button
+          ref={buttonRef}
           onClick={handleSubmit}
-          disabled={digits.some((d) => d === "")}
+          disabled={digits.some((d) => d === "") || isOnCooldown}
           className="flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             width: "300px",
@@ -172,7 +208,10 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
             background: "#10262F",
             backgroundImage:
               "linear-gradient(135deg, rgba(50, 194, 132, 0.26) 15%, rgba(40, 27, 101, 0) 85%)",
-            cursor: digits.some((d) => d === "") ? "not-allowed" : "pointer",
+            cursor:
+              digits.some((d) => d === "") || isOnCooldown
+                ? "not-allowed"
+                : "pointer",
             boxShadow:
               "inset 4px 4px 7px rgba(255, 255, 255, 0.06), inset -4px -4px 7px rgba(0, 0, 0, 0.25)",
             filter:
@@ -183,7 +222,7 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
             alignItems: "center",
           }}
           onMouseDown={(e) => {
-            if (!digits.some((d) => d === "")) {
+            if (!digits.some((d) => d === "") && !isOnCooldown) {
               e.currentTarget.style.boxShadow =
                 "inset 4px 4px 9px rgba(0, 0, 0, 0.5), inset -4px -4px 10px rgba(0, 0, 0, 0.6)";
               e.currentTarget.style.filter = "none";

@@ -13,6 +13,7 @@ body {
   overflow: hidden;
   margin: 0;
   padding: 0;
+  background: linear-gradient(to right, #174842, #10262f);
 }
 
 img {

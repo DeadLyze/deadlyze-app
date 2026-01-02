@@ -6,7 +6,8 @@
     "searchForm": {
       "title": "ENTER MATCH ID",
       "subtitle": "Match ID is located in the bottom right corner",
-      "searchButton": "SEARCH MATCH"
+      "searchButton": "SEARCH MATCH",
+      "error": "An error occurred while loading match data"
     }
   },
   "settings": {

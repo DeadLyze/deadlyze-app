@@ -1,6 +1,6 @@
 {
   "productName": "DeadLyze",
-  "version": "0.1.4",
+  "version": "0.1.8",
   "identifier": "deadlyze",
   "build": {
     "beforeDevCommand": "npx vite",
@@ -19,6 +19,7 @@
         "resizable": true,
         "fullscreen": false,
         "decorations": false,
+        "backgroundColor": "#174842",
         "dragDropEnabled": false,
         "alwaysOnTop": true
       }
