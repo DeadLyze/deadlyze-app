@@ -6,6 +6,11 @@ import {
 } from "./";
 import { PartyGroup } from "./PartyService";
 
+/**
+ * Cached match data structure
+ * NOTE: Match is cached ONLY after ALL data is fully loaded
+ * This prevents partial data from being cached if user exits early
+ */
 interface CachedMatchData {
   matchData: MatchData;
   heroIconUrls: Map<number, string>;

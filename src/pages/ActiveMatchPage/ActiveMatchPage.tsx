@@ -43,6 +43,7 @@ function ActiveMatchPage() {
   >(new Map());
   const [partyGroups, setPartyGroups] = useState<PartyGroup[]>([]);
   const [ranks, setRanks] = useState<Rank[]>([]);
+  const [isDataFullyLoaded, setIsDataFullyLoaded] = useState<boolean>(false);
 
   // Load ranks once on mount
   // Note: In development mode with React StrictMode, this effect will run twice
@@ -59,18 +60,33 @@ function ActiveMatchPage() {
   }, []);
 
   // Load all match data in parallel when match data changes
+  // NOTE: Match data is cached ONLY after ALL operations complete successfully
+  // This prevents partial data from being cached if user exits early
   useEffect(() => {
     if (!matchData) return;
 
+    let isCancelled = false;
+    setIsDataFullyLoaded(false);
+
     const loadMatchAssets = async () => {
       const allPlayers = [...matchData.amber_team, ...matchData.sapphire_team];
+      let loadedPartyGroups: PartyGroup[] = [];
 
       // Start party detection early (runs in parallel with other loads)
-      PartyService.detectPartyGroups(allPlayers)
-        .then((groups) => setPartyGroups(groups))
+      const partyGroupsPromise = PartyService.detectPartyGroups(allPlayers)
+        .then((groups) => {
+          loadedPartyGroups = groups;
+          if (!isCancelled) {
+            setPartyGroups(groups);
+          }
+          return groups;
+        })
         .catch((error) => {
           console.error("Failed to load party groups:", error);
-          setPartyGroups([]);
+          if (!isCancelled) {
+            setPartyGroups([]);
+          }
+          return [];
         });
 
       // Load hero icons
@@ -172,15 +188,20 @@ function ActiveMatchPage() {
         setRelationStatsMap(relationStats);
       }
 
-      if (matchData && matchData.match_id) {
+      // Wait for party groups to finish loading
+      await partyGroupsPromise;
+
+      // Cache match data only after ALL data is loaded and if not cancelled
+      if (!isCancelled && matchData && matchData.match_id) {
         MatchCacheService.setCachedMatch(matchData.match_id.toString(), {
           matchData,
           heroIconUrls: heroUrls,
           rankImageUrls: rankUrls,
           matchStatsMap: statsMap,
           relationStatsMap,
-          partyGroups: [],
+          partyGroups: loadedPartyGroups,
         });
+        setIsDataFullyLoaded(true);
       }
 
       // Retry failed loads after a short delay
@@ -290,6 +311,10 @@ function ActiveMatchPage() {
       failedRanks: number[],
       mmrMap: Map<number, any>
     ) => {
+      if (isCancelled) return;
+
+      let hasUpdates = false;
+
       // Retry hero icons
       if (failedHeroes.length > 0) {
         const retryHeroMap = await AssetsService.fetchHeroesByIds(failedHeroes);
@@ -305,8 +330,9 @@ function ActiveMatchPage() {
           }
         });
 
-        if (newHeroUrls.size > heroIconUrls.size) {
+        if (newHeroUrls.size > heroIconUrls.size && !isCancelled) {
           setHeroIconUrls(newHeroUrls);
+          hasUpdates = true;
         }
       }
 
@@ -328,13 +354,38 @@ function ActiveMatchPage() {
           }
         });
 
-        if (newRankUrls.size > rankImageUrls.size) {
+        if (newRankUrls.size > rankImageUrls.size && !isCancelled) {
           setRankImageUrls(newRankUrls);
+          hasUpdates = true;
+        }
+      }
+
+      // Update cache if there were successful retries and data was fully loaded
+      if (hasUpdates && isDataFullyLoaded && !isCancelled && matchData) {
+        const cachedMatch = MatchCacheService.getCachedMatch(
+          matchData.match_id.toString()
+        );
+        if (cachedMatch) {
+          MatchCacheService.setCachedMatch(matchData.match_id.toString(), {
+            ...cachedMatch,
+            heroIconUrls: new Map([
+              ...cachedMatch.heroIconUrls,
+              ...heroIconUrls,
+            ]),
+            rankImageUrls: new Map([
+              ...cachedMatch.rankImageUrls,
+              ...rankImageUrls,
+            ]),
+          });
         }
       }
     };
 
     loadMatchAssets();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [matchData, ranks]);
   const handleSearch = async (matchId: string) => {
     setError(false);
