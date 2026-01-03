@@ -18,12 +18,17 @@ import {
 import { PartyGroup } from "../../services";
 import { MATCH_TABLE_COLUMNS } from "./tableConfig";
 import { CacheService } from "../../services/CacheService";
+import { PLAYER_TAG_THRESHOLDS } from "../../constants/playerTagConstants";
 import {
-  PLAYER_TAG_COLORS,
-  PLAYER_TAG_THRESHOLDS,
-} from "../../constants/playerTagConstants";
-import { MATCH_RESULT_COLORS } from "../../constants/uiConstants";
+  MATCH_RESULT_COLORS,
+  PARTY_BRACKET_WIDTH,
+  TABLE_ROW_HEIGHT,
+} from "../../constants/uiConstants";
 import { useMatchCard } from "./MatchCard";
+
+const TAG_ICON_SIZE = "23px";
+const TAG_COLOR = "#e6ca9c";
+const TEAM_SIZE = 6;
 
 interface TeamTableProps {
   players: MatchPlayer[];
@@ -76,13 +81,30 @@ export const TeamTable: React.FC<TeamTableProps> = ({
   }, [players, matchStatsMap]);
 
   const renderPlayerTag = (tag: PlayerTag): React.ReactNode => {
-    const iconStyle = { width: "23px", height: "23px" };
-    const color =
-      PLAYER_TAG_COLORS[
-        tag.type.toUpperCase() as keyof typeof PLAYER_TAG_COLORS
-      ];
+    const iconStyle = { width: TAG_ICON_SIZE, height: TAG_ICON_SIZE };
 
-    const getTooltip = () => {
+    const getTagIcon = (): React.ReactNode => {
+      switch (tag.type) {
+        case "smurf":
+          return <FaMask style={{ ...iconStyle, color: TAG_COLOR }} />;
+        case "loser":
+          return <FaAnchor style={{ ...iconStyle, color: TAG_COLOR }} />;
+        case "spammer":
+          return (
+            <FaPersonWalkingArrowLoopLeft
+              style={{ ...iconStyle, color: TAG_COLOR }}
+            />
+          );
+        case "cheater":
+          return (
+            <GiSkullCrossedBones style={{ ...iconStyle, color: TAG_COLOR }} />
+          );
+        default:
+          return null;
+      }
+    };
+
+    const getTooltip = (): string => {
       const tagName = t(`activeMatch.tags.${tag.type}`);
 
       switch (tag.type) {
@@ -112,28 +134,26 @@ export const TeamTable: React.FC<TeamTableProps> = ({
       }
     };
 
-    const iconElement = (() => {
-      switch (tag.type) {
-        case "smurf":
-          return <FaMask style={{ ...iconStyle, color }} />;
-        case "loser":
-          return <FaAnchor style={{ ...iconStyle, color }} />;
-        case "spammer":
-          return (
-            <FaPersonWalkingArrowLoopLeft style={{ ...iconStyle, color }} />
-          );
-        case "cheater":
-          return <GiSkullCrossedBones style={{ ...iconStyle, color }} />;
-        default:
-          return null;
-      }
-    })();
-
     return (
       <div title={getTooltip()} className="cursor-default">
-        {iconElement}
+        {getTagIcon()}
       </div>
     );
+  };
+
+  const formatStreak = (streak: number | null): string => {
+    if (streak === null || streak === 0) return "—";
+    return streak > 0 ? `+${streak}` : `${streak}`;
+  };
+
+  const renderStatsColumn = (
+    stats: MatchStats | undefined,
+    renderContent: (s: MatchStats) => React.ReactNode
+  ) => {
+    if (!stats) {
+      return <span className="text-[#e6ca9c]/40">—</span>;
+    }
+    return renderContent(stats);
   };
 
   const renderColumnContent = (columnId: string, player: MatchPlayer) => {
@@ -173,31 +193,28 @@ export const TeamTable: React.FC<TeamTableProps> = ({
         );
 
       case "matches":
-        const stats = matchStatsMap?.get(player.account_id);
-        if (!stats) {
-          return <span className="text-[#e6ca9c]/40">—</span>;
-        }
-        return (
-          <div className="w-full flex gap-[10px]">
-            {/* All time stats */}
-            <div className="flex-1 flex flex-col items-center">
-              <span className="text-[#e6ca9c] text-sm font-medium">
-                {stats.totalMatches}
-              </span>
-              <span className="text-[#9FA6AD] text-xs font-normal">
-                {stats.totalWinrate}%
-              </span>
+        return renderStatsColumn(
+          matchStatsMap?.get(player.account_id),
+          (stats) => (
+            <div className="w-full flex gap-[10px]">
+              <div className="flex-1 flex flex-col items-center">
+                <span className="text-[#e6ca9c] text-sm font-medium">
+                  {stats.totalMatches}
+                </span>
+                <span className="text-[#9FA6AD] text-xs font-normal">
+                  {stats.totalWinrate}%
+                </span>
+              </div>
+              <div className="flex-1 flex flex-col items-center">
+                <span className="text-[#e6ca9c] text-sm font-medium">
+                  {stats.recentMatches}
+                </span>
+                <span className="text-[#9FA6AD] text-xs font-normal">
+                  {stats.recentWinrate}%
+                </span>
+              </div>
             </div>
-            {/* Last 14 days stats */}
-            <div className="flex-1 flex flex-col items-center">
-              <span className="text-[#e6ca9c] text-sm font-medium">
-                {stats.recentMatches}
-              </span>
-              <span className="text-[#9FA6AD] text-xs font-normal">
-                {stats.recentWinrate}%
-              </span>
-            </div>
-          </div>
+          )
         );
 
       case "current_hero": {
@@ -209,7 +226,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
         }
         return (
           <div className="w-full flex gap-[10px]">
-            {/* Matches */}
             <div className="flex-1 flex flex-col items-center">
               <span className="text-[#e6ca9c] text-sm font-medium">
                 {heroStats.matches}
@@ -218,7 +234,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
                 {heroStats.winrate}%
               </span>
             </div>
-            {/* K/D Ratio */}
             <div className="flex-1 flex flex-col items-center justify-center">
               <span className="text-[#e6ca9c] text-sm font-medium">
                 {heroStats.kd.toFixed(2)}
@@ -228,34 +243,43 @@ export const TeamTable: React.FC<TeamTableProps> = ({
         );
       }
 
-      case "current_streak": {
-        const stats = matchStatsMap?.get(player.account_id);
-        if (!stats) {
-          return <span className="text-[#e6ca9c]/40">—</span>;
-        }
-
-        const formatStreak = (streak: number | null): string => {
-          if (streak === null || streak === 0) return "—";
-          return streak > 0 ? `+${streak}` : `${streak}`;
-        };
-
-        return (
-          <div className="w-full flex gap-[10px]">
-            {/* Total streak */}
-            <div className="flex-1 flex items-center justify-center">
-              <span className="text-[#e6ca9c] text-sm font-medium">
-                {formatStreak(stats.currentStreak)}
-              </span>
+      case "current_streak":
+        return renderStatsColumn(
+          matchStatsMap?.get(player.account_id),
+          (stats) => (
+            <div className="w-full flex gap-[10px]">
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-[#e6ca9c] text-sm font-medium">
+                  {formatStreak(stats.currentStreak)}
+                </span>
+              </div>
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-[#e6ca9c] text-sm font-medium">
+                  {formatStreak(stats.currentHeroStreak)}
+                </span>
+              </div>
             </div>
-            {/* Hero streak */}
-            <div className="flex-1 flex items-center justify-center">
-              <span className="text-[#e6ca9c] text-sm font-medium">
-                {formatStreak(stats.currentHeroStreak)}
-              </span>
-            </div>
-          </div>
+          )
         );
-      }
+
+      case "average_stats":
+        return renderStatsColumn(
+          matchStatsMap?.get(player.account_id),
+          (stats) => (
+            <div className="w-full flex gap-[10px]">
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-[#e6ca9c] text-sm font-medium">
+                  {stats.avgLastHits} / {stats.avgDenies}
+                </span>
+              </div>
+              <div className="flex-1 flex items-center justify-center">
+                <span className="text-[#e6ca9c] text-sm font-medium">
+                  {stats.avgNetWorth.toLocaleString()}
+                </span>
+              </div>
+            </div>
+          )
+        );
 
       case "recent_matches": {
         const recentMatchStats = matchStatsMap?.get(player.account_id);
@@ -339,7 +363,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
         const currentUser = CacheService.getCurrentUser();
         const relationStats = relationStatsMap?.get(player.account_id);
 
-        // If no current user or this is the current user's row - show empty
         if (
           !currentUser.accountId ||
           player.account_id === currentUser.accountId
@@ -353,7 +376,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
 
         return (
           <div className="w-full flex gap-[10px]">
-            {/* With player stats */}
             <div className="flex-1 flex items-center justify-center gap-1">
               <span className="text-sm font-medium text-[#e6ca9c]">
                 {relationStats.withPlayer.wins}
@@ -363,7 +385,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
                 {relationStats.withPlayer.losses}
               </span>
             </div>
-            {/* Against player stats */}
             <div className="flex-1 flex items-center justify-center gap-1">
               <span className="text-sm font-medium text-[#e6ca9c]">
                 {relationStats.againstPlayer.wins}
@@ -380,7 +401,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
       case "tags": {
         const tags = playerTagsMap.get(player.account_id);
 
-        // If player not in map yet, data is still loading
         if (!playerTagsMap.has(player.account_id)) {
           return (
             <div className="w-full h-full flex items-center justify-center">
@@ -389,7 +409,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
           );
         }
 
-        // If player in map but no tags, show empty cell
         if (!tags || tags.length === 0) {
           return <div className="w-full h-full" />;
         }
@@ -430,21 +449,21 @@ export const TeamTable: React.FC<TeamTableProps> = ({
     }
   };
 
-  // Only show first 6 players (team size)
-  const displayedPlayers = players.slice(0, 6);
+  const displayedPlayers = players.slice(0, TEAM_SIZE);
 
   return (
     <div className="relative flex">
-      {/* Party brackets container */}
-      <div className="relative flex-shrink-0" style={{ width: "60px" }}>
-        {/* Loading indicators - show dashes until party data is loaded */}
+      <div
+        className="relative flex-shrink-0"
+        style={{ width: `${PARTY_BRACKET_WIDTH}px` }}
+      >
         {partyGroups.length === 0 && (
           <div className="absolute inset-0 flex flex-col justify-around">
             {displayedPlayers.map((_, index) => (
               <div
                 key={index}
                 className="flex items-center justify-center text-[#21C271] text-xs opacity-40"
-                style={{ height: "52px" }}
+                style={{ height: `${TABLE_ROW_HEIGHT}px` }}
               >
                 —
               </div>
@@ -453,14 +472,13 @@ export const TeamTable: React.FC<TeamTableProps> = ({
         )}
         <div
           className="absolute top-0 left-0 right-0"
-          style={{ height: `${displayedPlayers.length * 52}px` }}
+          style={{ height: `${displayedPlayers.length * TABLE_ROW_HEIGHT}px` }}
         >
           <PartyBrackets players={displayedPlayers} partyGroups={partyGroups} />
         </div>
       </div>
 
-      {/* Table container */}
-      <div className="flex-1">
+      <div className="flex-initial">
         <MatchTable>
           {displayedPlayers.map((player, index) => (
             <TableRow key={player.account_id || index}>

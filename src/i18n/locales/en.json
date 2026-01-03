@@ -23,7 +23,9 @@
         "current_hero": "CURRENT HERO",
         "current_heroSubtitle": "matches | K/D",
         "current_streak": "CURRENT STREAK",
-        "current_streakSubtitle": "total | hero"
+        "current_streakSubtitle": "total | hero",
+        "average_stats": "AVERAGE STATS",
+        "average_statsSubtitle": "souls | networth"
       }
     },
     "tags": {

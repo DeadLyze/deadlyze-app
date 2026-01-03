@@ -35,6 +35,9 @@ export interface MatchHistoryItem {
   player_kills?: number;
   player_deaths?: number;
   player_assists?: number;
+  last_hits?: number;
+  denies?: number;
+  net_worth?: number;
 }
 
 export interface MatchStats {
@@ -58,6 +61,9 @@ export interface MatchStats {
   } | null;
   currentStreak: number;
   currentHeroStreak: number | null;
+  avgLastHits: number;
+  avgDenies: number;
+  avgNetWorth: number;
 }
 
 // === Match Metadata Interfaces ===
@@ -242,6 +248,11 @@ export class PlayerDataService {
         last5Matches: [],
         recentMatchHistory: [],
         currentHeroStats: null,
+        currentStreak: 0,
+        currentHeroStreak: null,
+        avgLastHits: 0,
+        avgDenies: 0,
+        avgNetWorth: 0,
       };
     }
   }
@@ -267,6 +278,11 @@ export class PlayerDataService {
         last5Matches: [],
         recentMatchHistory: [],
         currentHeroStats: null,
+        currentStreak: 0,
+        currentHeroStreak: null,
+        avgLastHits: 0,
+        avgDenies: 0,
+        avgNetWorth: 0,
       };
     }
 
@@ -295,6 +311,12 @@ export class PlayerDataService {
     let heroTotalDeaths = 0;
     let heroTotalAssists = 0;
 
+    // Average stats
+    let totalLastHits = 0;
+    let totalDenies = 0;
+    let totalNetWorth = 0;
+    let validMatchesForAvg = 0;
+
     for (const match of matchHistory) {
       const isWin = match.match_result === match.player_team;
       const isRecent = match.start_time >= twoWeeksAgo;
@@ -322,6 +344,18 @@ export class PlayerDataService {
           heroTotalDeaths += match.player_deaths;
         if (match.player_assists !== undefined)
           heroTotalAssists += match.player_assists;
+      }
+
+      // Average stats (last_hits, denies, net_worth)
+      if (
+        match.last_hits !== undefined &&
+        match.denies !== undefined &&
+        match.net_worth !== undefined
+      ) {
+        totalLastHits += match.last_hits;
+        totalDenies += match.denies;
+        totalNetWorth += match.net_worth;
+        validMatchesForAvg++;
       }
     }
 
@@ -370,6 +404,18 @@ export class PlayerDataService {
         currentHeroId !== undefined && heroMatches > 0
           ? this.calculateHeroStreak(sortedHistory, currentHeroId)
           : null,
+      avgLastHits:
+        validMatchesForAvg > 0
+          ? Math.round(totalLastHits / validMatchesForAvg)
+          : 0,
+      avgDenies:
+        validMatchesForAvg > 0
+          ? Math.round(totalDenies / validMatchesForAvg)
+          : 0,
+      avgNetWorth:
+        validMatchesForAvg > 0
+          ? Math.round(totalNetWorth / validMatchesForAvg)
+          : 0,
     };
   }
 
@@ -578,7 +624,7 @@ export class PlayerDataService {
    */
   private static async fetchMatchMetadata(
     matchId: number
-  ): Promise<MatchMetadata | null> {
+  ): Promise<DetailedMatchMetadata | null> {
     try {
       const response = await fetch(
         `${BASE_URL}/v1/matches/${matchId}/metadata?is_custom=false`
@@ -651,7 +697,7 @@ export class PlayerDataService {
 
         if (metadata?.match_info?.players) {
           const player = metadata.match_info.players.find(
-            (p) => p.account_id === accountId
+            (p: DetailedPlayerStats) => p.account_id === accountId
           );
 
           if (player?.stats && player.stats.length > 0) {
@@ -659,7 +705,7 @@ export class PlayerDataService {
 
             if (lastStats.custom_user_stats) {
               const headshotStat = lastStats.custom_user_stats.find(
-                (stat) => stat.id === 13
+                (stat: { id: number; value?: number }) => stat.id === 13
               );
 
               if (headshotStat && headshotStat.value !== undefined) {

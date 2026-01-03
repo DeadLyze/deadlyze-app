@@ -13,10 +13,13 @@ export const COLUMN_WIDTH = {
   RELATION: 110,
   TAGS: 55,
   CURRENT_STREAK: 120,
+  AVERAGE_STATS: 140,
 } as const;
 
 // Table styling
 export const TABLE_HEADER_HEIGHT = 50;
+export const TABLE_ROW_HEIGHT = 52;
+export const PARTY_BRACKET_WIDTH = 60;
 export const TABLE_GAP = 10;
 
 // Colors

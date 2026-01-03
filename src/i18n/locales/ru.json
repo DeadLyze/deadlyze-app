@@ -23,7 +23,9 @@
         "current_hero": "ТЕКУЩИЙ ГЕРОЙ",
         "current_heroSubtitle": "матчей | K/D",
         "current_streak": "ТЕКУЩАЯ СЕРИЯ",
-        "current_streakSubtitle": "всего | герой"
+        "current_streakSubtitle": "всего | герой",
+        "average_stats": "СРЕДНИЕ ЗНАЧЕНИЯ",
+        "average_statsSubtitle": "души | нетворс"
       }
     },
     "tags": {

@@ -62,6 +62,12 @@ export const MATCH_TABLE_COLUMNS: ColumnConfig[] = [
     flex: `0 0 ${COLUMN_WIDTH.CURRENT_STREAK}px`,
     align: "center",
   },
+  {
+    id: "average_stats",
+    label: "Average Stats",
+    flex: `0 0 ${COLUMN_WIDTH.AVERAGE_STATS}px`,
+    align: "center",
+  },
 ];
 
 // Search button configuration

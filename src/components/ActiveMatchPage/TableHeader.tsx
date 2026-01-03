@@ -11,7 +11,8 @@ export const TableHeader: React.FC = () => {
       columnId === "matches" ||
       columnId === "relation" ||
       columnId === "current_hero" ||
-      columnId === "current_streak"
+      columnId === "current_streak" ||
+      columnId === "average_stats"
     ) {
       const subtitleKey =
         columnId === "matches"
@@ -20,7 +21,9 @@ export const TableHeader: React.FC = () => {
           ? "relationSubtitle"
           : columnId === "current_hero"
           ? "current_heroSubtitle"
-          : "current_streakSubtitle";
+          : columnId === "current_streak"
+          ? "current_streakSubtitle"
+          : "average_statsSubtitle";
       return (
         <div className="flex flex-col items-center justify-center leading-none gap-[2px]">
           <div className="text-xs font-medium uppercase tracking-wide">
