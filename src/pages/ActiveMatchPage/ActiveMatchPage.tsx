@@ -12,6 +12,8 @@ import {
   PlayerDataService,
   Rank,
   MatchStats,
+  PlayerRelationStats,
+  CacheService,
 } from "../../services";
 import { ASSET_RETRY_DELAY_MS } from "../../constants/uiConstants";
 
@@ -28,6 +30,9 @@ function ActiveMatchPage() {
   const [matchStatsMap, setMatchStatsMap] = useState<Map<number, MatchStats>>(
     new Map()
   );
+  const [relationStatsMap, setRelationStatsMap] = useState<
+    Map<number, PlayerRelationStats>
+  >(new Map());
   const [ranks, setRanks] = useState<Rank[]>([]);
 
   // Load ranks once on mount
@@ -131,6 +136,17 @@ function ActiveMatchPage() {
           }
         });
         setHeroIconUrls(new Map(heroUrls));
+      }
+
+      // Load player relation stats if current user is available
+      const currentUser = CacheService.getCurrentUser();
+      if (currentUser.accountId) {
+        const relationStats =
+          await PlayerDataService.fetchPlayerRelationStatsMap(
+            currentUser.accountId,
+            accountIds
+          );
+        setRelationStatsMap(relationStats);
       }
 
       // Retry failed loads after a short delay
@@ -266,6 +282,7 @@ function ActiveMatchPage() {
                 heroIconUrls={heroIconUrls}
                 rankImageUrls={rankImageUrls}
                 matchStatsMap={matchStatsMap}
+                relationStatsMap={relationStatsMap}
               />
               <TableHeader />
               <TeamTable
@@ -273,6 +290,7 @@ function ActiveMatchPage() {
                 heroIconUrls={heroIconUrls}
                 rankImageUrls={rankImageUrls}
                 matchStatsMap={matchStatsMap}
+                relationStatsMap={relationStatsMap}
               />
             </div>
           </div>

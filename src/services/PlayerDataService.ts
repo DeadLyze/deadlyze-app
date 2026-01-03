@@ -41,6 +41,33 @@ export interface MatchStats {
   last5Matches: MatchHistoryItem[];
 }
 
+// === Player Relation Interfaces ===
+
+export interface MateStats {
+  mate_id: number;
+  wins: number;
+  matches: number[];
+}
+
+export interface EnemyStats {
+  enemy_id: number;
+  wins: number;
+  matches: number[];
+}
+
+export interface PlayerRelationStats {
+  withPlayer: {
+    games: number;
+    wins: number;
+    losses: number;
+  };
+  againstPlayer: {
+    games: number;
+    wins: number;
+    losses: number;
+  };
+}
+
 /**
  * Service for fetching Deadlock player data (MMR, stats, etc.)
  */
@@ -206,5 +233,150 @@ export class PlayerDataService {
       recentWinrate,
       last5Matches,
     };
+  }
+
+  /**
+   * Fetch mate stats for a player (games played together on the same team)
+   * @param accountId - Current user's account ID
+   * @returns Array of mate statistics
+   */
+  static async fetchMateStats(accountId: number): Promise<MateStats[]> {
+    try {
+      const url = `${BASE_URL}/v1/players/${accountId}/mate-stats?same_party=false`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
+   * Fetch enemy stats for a player (games played against)
+   * @param accountId - Current user's account ID
+   * @returns Array of enemy statistics
+   */
+  static async fetchEnemyStats(accountId: number): Promise<EnemyStats[]> {
+    try {
+      const url = `${BASE_URL}/v1/players/${accountId}/enemy-stats`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
+   * Get relation stats for a specific player
+   * @param currentUserAccountId - Current user's account ID
+   * @param targetAccountId - Target player's account ID
+   * @returns Relation statistics (with/against player)
+   */
+  static async fetchPlayerRelationStats(
+    currentUserAccountId: number,
+    targetAccountId: number
+  ): Promise<PlayerRelationStats> {
+    try {
+      const [mateStats, enemyStats] = await Promise.all([
+        this.fetchMateStats(currentUserAccountId),
+        this.fetchEnemyStats(currentUserAccountId),
+      ]);
+
+      const mateData = mateStats.find((m) => m.mate_id === targetAccountId);
+      const enemyData = enemyStats.find((e) => e.enemy_id === targetAccountId);
+
+      return {
+        withPlayer: mateData
+          ? {
+              games: mateData.matches.length,
+              wins: mateData.wins,
+              losses: mateData.matches.length - mateData.wins,
+            }
+          : { games: 0, wins: 0, losses: 0 },
+        againstPlayer: enemyData
+          ? {
+              games: enemyData.matches.length,
+              wins: enemyData.wins,
+              losses: enemyData.matches.length - enemyData.wins,
+            }
+          : { games: 0, wins: 0, losses: 0 },
+      };
+    } catch (error) {
+      return {
+        withPlayer: { games: 0, wins: 0, losses: 0 },
+        againstPlayer: { games: 0, wins: 0, losses: 0 },
+      };
+    }
+  }
+
+  /**
+   * Fetch relation stats for multiple players at once
+   * @param currentUserAccountId - Current user's account ID
+   * @param targetAccountIds - Array of target player account IDs
+   * @returns Map of account_id to PlayerRelationStats
+   */
+  static async fetchPlayerRelationStatsMap(
+    currentUserAccountId: number,
+    targetAccountIds: number[]
+  ): Promise<Map<number, PlayerRelationStats>> {
+    try {
+      const [mateStats, enemyStats] = await Promise.all([
+        this.fetchMateStats(currentUserAccountId),
+        this.fetchEnemyStats(currentUserAccountId),
+      ]);
+
+      const relationMap = new Map<number, PlayerRelationStats>();
+
+      targetAccountIds.forEach((targetId) => {
+        if (targetId === currentUserAccountId) {
+          return;
+        }
+
+        const mateData = mateStats.find((m) => m.mate_id === targetId);
+        const enemyData = enemyStats.find((e) => e.enemy_id === targetId);
+
+        relationMap.set(targetId, {
+          withPlayer: mateData
+            ? {
+                games: mateData.matches.length,
+                wins: mateData.wins,
+                losses: mateData.matches.length - mateData.wins,
+              }
+            : { games: 0, wins: 0, losses: 0 },
+          againstPlayer: enemyData
+            ? {
+                games: enemyData.matches.length,
+                wins: enemyData.wins,
+                losses: enemyData.matches.length - enemyData.wins,
+              }
+            : { games: 0, wins: 0, losses: 0 },
+        });
+      });
+
+      return relationMap;
+    } catch (error) {
+      return new Map();
+    }
   }
 }

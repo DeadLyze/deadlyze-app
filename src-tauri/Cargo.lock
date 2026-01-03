@@ -520,7 +520,7 @@ dependencies = [
 
 [[package]]
 name = "deadlyze-app"
-version = "0.1.13"
+version = "0.1.14"
 dependencies = [
  "haste",
  "reqwest 0.13.1",

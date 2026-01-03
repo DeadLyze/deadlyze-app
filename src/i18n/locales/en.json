@@ -16,7 +16,9 @@
         "player": "PLAYER",
         "matches": "MATCHES",
         "matchesSubtitle": "all time | 14 days",
-        "recent_matches": "RECENT MATCHES"
+        "recent_matches": "RECENT MATCHES",
+        "relation": "MATCHES",
+        "relationSubtitle": "with | against"
       }
     }
   },

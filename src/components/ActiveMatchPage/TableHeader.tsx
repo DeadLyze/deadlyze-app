@@ -7,14 +7,16 @@ export const TableHeader: React.FC = () => {
   const { t } = useTranslation();
 
   const renderColumnHeader = (columnId: string) => {
-    if (columnId === "matches") {
+    if (columnId === "matches" || columnId === "relation") {
+      const subtitleKey =
+        columnId === "matches" ? "matchesSubtitle" : "relationSubtitle";
       return (
         <div className="flex flex-col items-center justify-center leading-none gap-[2px]">
           <div className="text-xs font-medium uppercase tracking-wide">
-            {t("activeMatch.table.columns.matches")}
+            {t(`activeMatch.table.columns.${columnId}`)}
           </div>
           <div className="text-[9px] font-normal opacity-80">
-            {t("activeMatch.table.columns.matchesSubtitle")}
+            {t(`activeMatch.table.columns.${subtitleKey}`)}
           </div>
         </div>
       );

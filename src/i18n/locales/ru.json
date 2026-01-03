@@ -16,7 +16,9 @@
         "player": "ИГРОК",
         "matches": "МАТЧИ",
         "matchesSubtitle": "всего | 14 дней",
-        "recent_matches": "ПОСЛЕДНИЕ МАТЧИ"
+        "recent_matches": "ПОСЛЕДНИЕ МАТЧИ",
+        "relation": "МАТЧИ",
+        "relationSubtitle": "с | против"
       }
     }
   },

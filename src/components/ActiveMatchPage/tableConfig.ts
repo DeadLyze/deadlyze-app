@@ -38,6 +38,12 @@ export const MATCH_TABLE_COLUMNS: ColumnConfig[] = [
     flex: `0 0 ${COLUMN_WIDTH.RECENT_MATCHES}px`,
     align: "center",
   },
+  {
+    id: "relation",
+    label: "With / Against",
+    flex: `0 0 ${COLUMN_WIDTH.RELATION}px`,
+    align: "center",
+  },
 ];
 
 // Search button configuration

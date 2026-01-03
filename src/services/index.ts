@@ -11,4 +11,7 @@ export type {
   PlayerMMR,
   MatchHistoryItem,
   MatchStats,
+  MateStats,
+  EnemyStats,
+  PlayerRelationStats,
 } from "./PlayerDataService";

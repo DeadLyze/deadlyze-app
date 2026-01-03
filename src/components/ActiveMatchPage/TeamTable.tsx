@@ -1,14 +1,19 @@
 import React from "react";
 import { MatchTable, TableRow, TableColumn } from "./MatchTable";
 import { MatchPlayer } from "../../services/MatchService";
-import { MatchStats } from "../../services/PlayerDataService";
+import {
+  MatchStats,
+  PlayerRelationStats,
+} from "../../services/PlayerDataService";
 import { MATCH_TABLE_COLUMNS } from "./tableConfig";
+import { CacheService } from "../../services/CacheService";
 
 interface TeamTableProps {
   players: MatchPlayer[];
   heroIconUrls?: Map<number, string>;
   rankImageUrls?: Map<number, string>;
   matchStatsMap?: Map<number, MatchStats>;
+  relationStatsMap?: Map<number, PlayerRelationStats>;
 }
 
 export const TeamTable: React.FC<TeamTableProps> = ({
@@ -16,6 +21,7 @@ export const TeamTable: React.FC<TeamTableProps> = ({
   heroIconUrls,
   rankImageUrls,
   matchStatsMap,
+  relationStatsMap,
 }) => {
   const renderColumnContent = (columnId: string, player: MatchPlayer) => {
     switch (columnId) {
@@ -135,6 +141,70 @@ export const TeamTable: React.FC<TeamTableProps> = ({
                 style={{ backgroundColor: "#1a1a1a" }}
               />
             ))}
+          </div>
+        );
+
+      case "relation":
+        const currentUser = CacheService.getCurrentUser();
+        const relationStats = relationStatsMap?.get(player.account_id);
+
+        if (
+          !currentUser.accountId ||
+          player.account_id === currentUser.accountId
+        ) {
+          return <span className="text-[#e6ca9c]/40">—</span>;
+        }
+
+        if (!relationStats) {
+          return <span className="text-[#e6ca9c]/40">—</span>;
+        }
+
+        return (
+          <div className="w-full flex gap-[10px]">
+            {/* With player stats */}
+            <div className="flex-1 flex items-center justify-center gap-1">
+              <span
+                className={`text-sm font-medium ${
+                  relationStats.withPlayer.wins > 0
+                    ? "text-[#2dc864]"
+                    : "text-[#e6ca9c]"
+                }`}
+              >
+                {relationStats.withPlayer.wins}
+              </span>
+              <span className="text-xs text-[#9FA6AD]">/</span>
+              <span
+                className={`text-sm font-medium ${
+                  relationStats.withPlayer.losses > 0
+                    ? "text-[#c83c3c]"
+                    : "text-[#e6ca9c]"
+                }`}
+              >
+                {relationStats.withPlayer.losses}
+              </span>
+            </div>
+            {/* Against player stats */}
+            <div className="flex-1 flex items-center justify-center gap-1">
+              <span
+                className={`text-sm font-medium ${
+                  relationStats.againstPlayer.wins > 0
+                    ? "text-[#2dc864]"
+                    : "text-[#e6ca9c]"
+                }`}
+              >
+                {relationStats.againstPlayer.wins}
+              </span>
+              <span className="text-xs text-[#9FA6AD]">/</span>
+              <span
+                className={`text-sm font-medium ${
+                  relationStats.againstPlayer.losses > 0
+                    ? "text-[#c83c3c]"
+                    : "text-[#e6ca9c]"
+                }`}
+              >
+                {relationStats.againstPlayer.losses}
+              </span>
+            </div>
           </div>
         );
 
