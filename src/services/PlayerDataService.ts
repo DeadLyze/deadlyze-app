@@ -47,21 +47,38 @@ export interface MatchStats {
 
 // === Match Metadata Interfaces ===
 
+export interface ItemEvent {
+  item_id: number;
+  game_time_s: number;
+  sold_time_s: number;
+}
+
 export interface CustomUserStat {
   id: number;
   value: number;
 }
 
-export interface PlayerMatchStats {
-  account_id: number;
-  stats: Array<{
-    custom_user_stats?: CustomUserStat[];
-  }>;
+export interface PlayerStatsSnapshot {
+  time_stamp_s: number;
+  net_worth: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  player_damage: number;
+  player_healing: number;
+  custom_user_stats?: CustomUserStat[];
 }
 
-export interface MatchMetadata {
+export interface DetailedPlayerStats {
+  account_id: number;
+  items?: ItemEvent[];
+  stats?: PlayerStatsSnapshot[];
+}
+
+export interface DetailedMatchMetadata {
   match_info: {
-    players: PlayerMatchStats[];
+    duration_s: number;
+    players: DetailedPlayerStats[];
   };
 }
 
@@ -438,6 +455,35 @@ export class PlayerDataService {
 
       return await response.json();
     } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Fetch detailed match metadata with items
+   * @param matchId - Match ID to fetch metadata for
+   * @returns Detailed match metadata or null if fetch fails
+   */
+  static async fetchDetailedMatchMetadata(
+    matchId: number
+  ): Promise<DetailedMatchMetadata | null> {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/v1/matches/${matchId}/metadata?is_custom=false`
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("TOO_MANY_REQUESTS");
+        }
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (error instanceof Error && error.message === "TOO_MANY_REQUESTS") {
+        throw error;
+      }
       return null;
     }
   }

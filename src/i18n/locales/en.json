@@ -33,6 +33,18 @@
         "spammer": "{{value}}% hero pick rate last {{days}} days",
         "cheater": "Avg headshot {{value}}% last {{matches}} matches"
       }
+    },
+    "matchCard": {
+      "date": "Date",
+      "duration": "Duration",
+      "souls": "Souls",
+      "kills": "Kills",
+      "deaths": "Deaths",
+      "assists": "Assists",
+      "damage": "Damage",
+      "healing": "Healing",
+      "loading": "Loading...",
+      "noData": "Failed to load match data"
     }
   },
   "settings": {

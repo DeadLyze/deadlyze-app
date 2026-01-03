@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { FaAnchor, FaMask, FaArrowRotateRight } from "react-icons/fa6";
 import { GiSkullCrossedBones } from "react-icons/gi";
@@ -19,6 +19,7 @@ import {
   PLAYER_TAG_THRESHOLDS,
 } from "../../constants/playerTagConstants";
 import { MATCH_RESULT_COLORS } from "../../constants/uiConstants";
+import { useMatchCard } from "./MatchCard";
 
 interface TeamTableProps {
   players: MatchPlayer[];
@@ -27,6 +28,7 @@ interface TeamTableProps {
   matchStatsMap?: Map<number, MatchStats>;
   relationStatsMap?: Map<number, PlayerRelationStats>;
   partyGroups?: PartyGroup[];
+  isTopTable?: boolean;
 }
 
 export const TeamTable: React.FC<TeamTableProps> = ({
@@ -36,11 +38,14 @@ export const TeamTable: React.FC<TeamTableProps> = ({
   matchStatsMap,
   relationStatsMap,
   partyGroups = [],
+  isTopTable = false,
 }) => {
   const { t } = useTranslation();
   const [playerTagsMap, setPlayerTagsMap] = useState<Map<number, PlayerTag[]>>(
     new Map()
   );
+  const matchIconRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const { showCard, hideCard } = useMatchCard();
 
   useEffect(() => {
     const loadPlayerTags = async () => {
@@ -203,11 +208,41 @@ export const TeamTable: React.FC<TeamTableProps> = ({
               const barGlow = isWin
                 ? MATCH_RESULT_COLORS.WIN_GLOW
                 : MATCH_RESULT_COLORS.LOSS_GLOW;
+              const refKey = `${player.account_id}-${idx}`;
 
               return (
                 <div
                   key={idx}
-                  className="flex-1 flex items-center justify-center relative"
+                  ref={(el) => {
+                    if (el) {
+                      matchIconRefs.current.set(refKey, el);
+                    } else {
+                      matchIconRefs.current.delete(refKey);
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-center relative cursor-pointer"
+                  onMouseEnter={() => {
+                    const triggerElement = matchIconRefs.current.get(refKey);
+                    if (triggerElement) {
+                      showCard({
+                        match: {
+                          ...match,
+                          account_id: player.account_id,
+                        },
+                        heroIconUrl: heroIconUrl || null,
+                        position: isTopTable ? "top" : "bottom",
+                        triggerElement,
+                      });
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    hideCard();
+                  }}
+                  style={{
+                    boxShadow: isWin
+                      ? "inset 0 -20px 30px -15px rgba(67, 179, 71, 0.6)"
+                      : "inset 0 -20px 30px -15px rgba(244, 67, 54, 0.6)",
+                  }}
                 >
                   {heroIconUrl ? (
                     <img
@@ -339,6 +374,20 @@ export const TeamTable: React.FC<TeamTableProps> = ({
     <div className="relative flex">
       {/* Party brackets container */}
       <div className="relative flex-shrink-0" style={{ width: "60px" }}>
+        {/* Loading indicators - show dashes until party data is loaded */}
+        {partyGroups.length === 0 && (
+          <div className="absolute inset-0 flex flex-col justify-around">
+            {displayedPlayers.map((_, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-center text-[#21C271] text-xs opacity-40"
+                style={{ height: "52px" }}
+              >
+                —
+              </div>
+            ))}
+          </div>
+        )}
         <div
           className="absolute top-0 left-0 right-0"
           style={{ height: `${displayedPlayers.length * 52}px` }}

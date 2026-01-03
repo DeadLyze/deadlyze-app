@@ -46,6 +46,16 @@ export interface Rank {
   images: RankImages;
 }
 
+// === Item Interfaces ===
+
+export interface Item {
+  id: number;
+  name: string;
+  shop_image_small_webp?: string;
+  shop_image_webp?: string;
+  shop_image_small?: string;
+}
+
 /**
  * Service for fetching Deadlock game assets
  */
@@ -173,5 +183,63 @@ export class AssetsService {
 
     const subrankKey = `small_subrank${divisionTier}_webp` as keyof RankImages;
     return rank.images[subrankKey] || "";
+  }
+
+  /**
+   * Fetch item data by item ID
+   * @param itemId - Item ID number
+   * @returns Item data including name and images
+   */
+  static async fetchItemById(itemId: number): Promise<Item | null> {
+    try {
+      const url = `${BASE_URL}/v2/items/${itemId}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const item: Item = await response.json();
+      return item;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Batch fetch multiple items by IDs with caching
+   * @param itemIds - Array of item IDs
+   * @returns Map of item ID to Item data
+   */
+  static async fetchItemsByIds(itemIds: number[]): Promise<Map<number, Item>> {
+    try {
+      const uniqueIds = [...new Set(itemIds)];
+      const itemMap = new Map<number, Item>();
+
+      const itemPromises = uniqueIds.map(async (id, index) => {
+        if (index > 0) {
+          await delay(50);
+        }
+        return this.fetchItemById(id).then((item) => ({ id, item }));
+      });
+
+      const results = await Promise.all(itemPromises);
+
+      results.forEach(({ id, item }) => {
+        if (item) {
+          itemMap.set(id, item);
+        }
+      });
+
+      return itemMap;
+    } catch (error) {
+      return new Map();
+    }
   }
 }
