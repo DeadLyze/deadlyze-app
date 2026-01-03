@@ -42,6 +42,7 @@ export interface MatchStats {
   recentWins: number;
   recentWinrate: number;
   last5Matches: MatchHistoryItem[];
+  recentMatchHistory: MatchHistoryItem[];
 }
 
 // === Match Metadata Interfaces ===
@@ -203,6 +204,7 @@ export class PlayerDataService {
         recentWins: 0,
         recentWinrate: 0,
         last5Matches: [],
+        recentMatchHistory: [],
       };
     }
   }
@@ -222,6 +224,7 @@ export class PlayerDataService {
         recentWins: 0,
         recentWinrate: 0,
         last5Matches: [],
+        recentMatchHistory: [],
       };
     }
 
@@ -264,6 +267,7 @@ export class PlayerDataService {
       recentWins,
       recentWinrate,
       last5Matches,
+      recentMatchHistory: recentMatches,
     };
   }
 
@@ -516,13 +520,15 @@ export class PlayerDataService {
 
     const {
       SMURF_WINRATE,
+      SMURF_MIN_MATCHES,
       LOSER_WINRATE,
       SPAMMER_HERO_RATE,
       LOSER_MIN_MATCHES,
     } = PLAYER_TAG_THRESHOLDS;
 
-    // Check for smurf: high winrate both all-time and last 14 days
+    // Check for smurf: high winrate both all-time and last 14 days with minimum matches
     if (
+      matchStats.totalMatches >= SMURF_MIN_MATCHES &&
       matchStats.totalWinrate >= SMURF_WINRATE &&
       matchStats.recentWinrate >= SMURF_WINRATE
     ) {
@@ -542,11 +548,12 @@ export class PlayerDataService {
     }
 
     // Check for spammer: frequently plays current hero in last 14 days
-    if (currentHeroId && matchStats.last5Matches.length > 0) {
-      const heroMatches = matchStats.last5Matches.filter(
+    if (currentHeroId && matchStats.recentMatchHistory.length > 0) {
+      const heroMatches = matchStats.recentMatchHistory.filter(
         (match) => match.hero_id === currentHeroId
       ).length;
-      const heroRate = (heroMatches / matchStats.last5Matches.length) * 100;
+      const heroRate =
+        (heroMatches / matchStats.recentMatchHistory.length) * 100;
 
       if (heroRate >= SPAMMER_HERO_RATE) {
         tags.push({ type: "spammer", value: Math.round(heroRate) });

@@ -25,30 +25,36 @@ export const TableHeader: React.FC = () => {
   };
 
   return (
-    <div
-      className="flex w-full -mx-1 px-1"
-      style={{ height: `${TABLE_HEADER_HEIGHT}px` }}
-    >
-      {MATCH_TABLE_COLUMNS.map((column) => (
-        <div
-          key={column.id}
-          className={`flex items-center text-[#9FA6AD] text-xs font-medium uppercase tracking-wide ${
-            column.id === "player"
-              ? "justify-center"
-              : column.align === "left"
-              ? "justify-start"
-              : column.align === "right"
-              ? "justify-end"
-              : "justify-center"
-          }`}
-          style={{
-            flex: column.flex,
-            overflow: "hidden",
-          }}
-        >
-          {renderColumnHeader(column.id)}
-        </div>
-      ))}
+    <div className="flex">
+      {/* Party brackets spacer */}
+      <div className="flex-shrink-0" style={{ width: "60px" }} />
+
+      {/* Headers container */}
+      <div
+        className="flex flex-1 w-full pl-1"
+        style={{ height: `${TABLE_HEADER_HEIGHT}px` }}
+      >
+        {MATCH_TABLE_COLUMNS.map((column) => (
+          <div
+            key={column.id}
+            className={`flex items-center text-[#9FA6AD] text-xs font-medium uppercase tracking-wide ${
+              column.id === "player"
+                ? "justify-center"
+                : column.align === "left"
+                ? "justify-start"
+                : column.align === "right"
+                ? "justify-end"
+                : "justify-center"
+            }`}
+            style={{
+              flex: column.flex,
+              overflow: "hidden",
+            }}
+          >
+            {renderColumnHeader(column.id)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

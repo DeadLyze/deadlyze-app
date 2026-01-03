@@ -4,6 +4,7 @@
 
 export const PLAYER_TAG_THRESHOLDS = {
   SMURF_WINRATE: 65, // Winrate percentage for smurf tag
+  SMURF_MIN_MATCHES: 20, // Minimum total matches for smurf tag
   LOSER_WINRATE: 40, // Winrate percentage for loser tag
   SPAMMER_HERO_RATE: 37, // Percentage of games on same hero for spammer tag
   CHEATER_HEADSHOT_RATE: 30, // Headshot percentage for cheater tag

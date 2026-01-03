@@ -10,9 +10,11 @@ import {
   MatchData,
   AssetsService,
   PlayerDataService,
+  PartyService,
   Rank,
   MatchStats,
   PlayerRelationStats,
+  PartyGroup,
   CacheService,
 } from "../../services";
 import { ASSET_RETRY_DELAY_MS } from "../../constants/uiConstants";
@@ -33,6 +35,7 @@ function ActiveMatchPage() {
   const [relationStatsMap, setRelationStatsMap] = useState<
     Map<number, PlayerRelationStats>
   >(new Map());
+  const [partyGroups, setPartyGroups] = useState<PartyGroup[]>([]);
   const [ranks, setRanks] = useState<Rank[]>([]);
 
   // Load ranks once on mount
@@ -49,12 +52,20 @@ function ActiveMatchPage() {
     loadRanks();
   }, []);
 
-  // Load hero icons and player ranks when match data changes
+  // Load all match data in parallel when match data changes
   useEffect(() => {
     if (!matchData) return;
 
     const loadMatchAssets = async () => {
       const allPlayers = [...matchData.amber_team, ...matchData.sapphire_team];
+
+      // Start party detection early (runs in parallel with other loads)
+      PartyService.detectPartyGroups(allPlayers)
+        .then((groups) => setPartyGroups(groups))
+        .catch((error) => {
+          console.error("Failed to load party groups:", error);
+          setPartyGroups([]);
+        });
 
       // Load hero icons
       const heroIds = allPlayers.map((p) => p.hero_id);
@@ -66,7 +77,7 @@ function ActiveMatchPage() {
       heroIds.forEach((heroId) => {
         const hero = heroMap.get(heroId);
         const imageUrl =
-          hero?.images.top_bar_image_webp || hero?.images.selection_image_webp;
+          hero?.images.selection_image_webp || hero?.images.top_bar_image_webp;
         if (imageUrl) {
           heroUrls.set(heroId, imageUrl);
         } else {
@@ -134,8 +145,8 @@ function ActiveMatchPage() {
         missingHeroIds.forEach((heroId) => {
           const hero = additionalHeroMap.get(heroId);
           const imageUrl =
-            hero?.images.top_bar_image_webp ||
-            hero?.images.selection_image_webp;
+            hero?.images.selection_image_webp ||
+            hero?.images.top_bar_image_webp;
           if (imageUrl) {
             heroUrls.set(heroId, imageUrl);
           }
@@ -176,8 +187,8 @@ function ActiveMatchPage() {
         failedHeroes.forEach((heroId) => {
           const hero = retryHeroMap.get(heroId);
           const imageUrl =
-            hero?.images.top_bar_image_webp ||
-            hero?.images.selection_image_webp;
+            hero?.images.selection_image_webp ||
+            hero?.images.top_bar_image_webp;
           if (imageUrl) {
             newHeroUrls.set(heroId, imageUrl);
           }
@@ -291,6 +302,7 @@ function ActiveMatchPage() {
                 rankImageUrls={rankImageUrls}
                 matchStatsMap={matchStatsMap}
                 relationStatsMap={relationStatsMap}
+                partyGroups={partyGroups}
               />
               <TableHeader />
               <TeamTable
@@ -299,6 +311,7 @@ function ActiveMatchPage() {
                 rankImageUrls={rankImageUrls}
                 matchStatsMap={matchStatsMap}
                 relationStatsMap={relationStatsMap}
+                partyGroups={partyGroups}
               />
             </div>
           </div>

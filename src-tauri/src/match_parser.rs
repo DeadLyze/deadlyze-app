@@ -229,8 +229,9 @@ fn print_team_table(title: &str, players: &[MatchPlayer]) {
     println!("{}", table_separator);
 
     for player in players {
-        let name = if player.steam_name.len() > 30 {
-            format!("{}...", &player.steam_name[..27])
+        let name = if player.steam_name.chars().count() > 30 {
+            let truncated: String = player.steam_name.chars().take(27).collect();
+            format!("{}...", truncated)
         } else {
             player.steam_name.clone()
         };

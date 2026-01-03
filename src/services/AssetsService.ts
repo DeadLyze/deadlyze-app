@@ -115,7 +115,7 @@ export class AssetsService {
 
   /**
    * Get hero icon URL (WebP format) by hero ID
-   * Returns top_bar_image_webp from hero images, falls back to selection_image_webp
+   * Returns selection_image_webp from hero images, falls back to top_bar_image_webp
    * @param heroId - Hero ID number
    * @returns Image URL or empty string if not found
    */
@@ -123,7 +123,7 @@ export class AssetsService {
     try {
       const hero = await this.fetchHeroById(heroId);
       return (
-        hero.images.top_bar_image_webp || hero.images.selection_image_webp || ""
+        hero.images.selection_image_webp || hero.images.top_bar_image_webp || ""
       );
     } catch (error) {
       return "";

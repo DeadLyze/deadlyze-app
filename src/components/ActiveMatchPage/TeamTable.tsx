@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { FaAnchor, FaMask, FaArrowRotateRight } from "react-icons/fa6";
 import { GiSkullCrossedBones } from "react-icons/gi";
 import { MatchTable, TableRow, TableColumn } from "./MatchTable";
+import { PartyBrackets } from "./PartyBrackets";
 import { MatchPlayer } from "../../services/MatchService";
 import {
   MatchStats,
@@ -10,12 +11,14 @@ import {
   PlayerTag,
   PlayerDataService,
 } from "../../services/PlayerDataService";
+import { PartyGroup } from "../../services";
 import { MATCH_TABLE_COLUMNS } from "./tableConfig";
 import { CacheService } from "../../services/CacheService";
 import {
   PLAYER_TAG_COLORS,
   PLAYER_TAG_THRESHOLDS,
 } from "../../constants/playerTagConstants";
+import { MATCH_RESULT_COLORS } from "../../constants/uiConstants";
 
 interface TeamTableProps {
   players: MatchPlayer[];
@@ -23,6 +26,7 @@ interface TeamTableProps {
   rankImageUrls?: Map<number, string>;
   matchStatsMap?: Map<number, MatchStats>;
   relationStatsMap?: Map<number, PlayerRelationStats>;
+  partyGroups?: PartyGroup[];
 }
 
 export const TeamTable: React.FC<TeamTableProps> = ({
@@ -31,6 +35,7 @@ export const TeamTable: React.FC<TeamTableProps> = ({
   rankImageUrls,
   matchStatsMap,
   relationStatsMap,
+  partyGroups = [],
 }) => {
   const { t } = useTranslation();
   const [playerTagsMap, setPlayerTagsMap] = useState<Map<number, PlayerTag[]>>(
@@ -60,6 +65,65 @@ export const TeamTable: React.FC<TeamTableProps> = ({
 
     loadPlayerTags();
   }, [players, matchStatsMap]);
+
+  const renderPlayerTag = (tag: PlayerTag): React.ReactNode => {
+    const iconStyle = { width: "23px", height: "23px" };
+    const color =
+      PLAYER_TAG_COLORS[
+        tag.type.toUpperCase() as keyof typeof PLAYER_TAG_COLORS
+      ];
+
+    const getTooltip = () => {
+      const tagName = t(`activeMatch.tags.${tag.type}`);
+
+      switch (tag.type) {
+        case "smurf":
+          return `${tagName}: ${t("activeMatch.tags.tooltips.smurf", {
+            totalValue: tag.totalValue,
+            recentValue: tag.recentValue,
+            days: 14,
+          })}`;
+        case "loser":
+          return `${tagName}: ${t("activeMatch.tags.tooltips.loser", {
+            recentValue: tag.recentValue,
+            days: 14,
+          })}`;
+        case "spammer":
+          return `${tagName}: ${t("activeMatch.tags.tooltips.spammer", {
+            value: tag.value,
+            days: 14,
+          })}`;
+        case "cheater":
+          return `${tagName}: ${t("activeMatch.tags.tooltips.cheater", {
+            value: tag.value,
+            matches: PLAYER_TAG_THRESHOLDS.CHEATER_MATCHES_COUNT,
+          })}`;
+        default:
+          return "";
+      }
+    };
+
+    const iconElement = (() => {
+      switch (tag.type) {
+        case "smurf":
+          return <FaMask style={{ ...iconStyle, color }} />;
+        case "loser":
+          return <FaAnchor style={{ ...iconStyle, color }} />;
+        case "spammer":
+          return <FaArrowRotateRight style={{ ...iconStyle, color }} />;
+        case "cheater":
+          return <GiSkullCrossedBones style={{ ...iconStyle, color }} />;
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <div title={getTooltip()} className="cursor-default">
+        {iconElement}
+      </div>
+    );
+  };
 
   const renderColumnContent = (columnId: string, player: MatchPlayer) => {
     switch (columnId) {
@@ -133,23 +197,17 @@ export const TeamTable: React.FC<TeamTableProps> = ({
             {recentMatches.map((match, idx) => {
               const isWin = match.match_result === match.player_team;
               const heroIconUrl = heroIconUrls?.get(match.hero_id);
-              const glowColor = isWin
-                ? "rgba(45, 200, 100, 0.6)"
-                : "rgba(200, 60, 60, 0.6)";
               const barColor = isWin
-                ? "rgba(45, 200, 100, 0.9)"
-                : "rgba(200, 60, 60, 0.9)";
+                ? MATCH_RESULT_COLORS.WIN_BAR
+                : MATCH_RESULT_COLORS.LOSS_BAR;
               const barGlow = isWin
-                ? "rgba(45, 200, 100, 0.4)"
-                : "rgba(200, 60, 60, 0.4)";
+                ? MATCH_RESULT_COLORS.WIN_GLOW
+                : MATCH_RESULT_COLORS.LOSS_GLOW;
 
               return (
                 <div
                   key={idx}
                   className="flex-1 flex items-center justify-center relative"
-                  style={{
-                    background: `radial-gradient(ellipse 100% 80% at 50% 75%, ${glowColor} 0%, transparent 70%)`,
-                  }}
                 >
                   {heroIconUrl ? (
                     <img
@@ -173,11 +231,7 @@ export const TeamTable: React.FC<TeamTableProps> = ({
             })}
             {/* Fill empty slots if less than 5 matches */}
             {Array.from({ length: 5 - recentMatches.length }).map((_, idx) => (
-              <div
-                key={`empty-${idx}`}
-                className="flex-1"
-                style={{ backgroundColor: "#1a1a1a" }}
-              />
+              <div key={`empty-${idx}`} className="flex-1" />
             ))}
           </div>
         );
@@ -187,11 +241,12 @@ export const TeamTable: React.FC<TeamTableProps> = ({
         const currentUser = CacheService.getCurrentUser();
         const relationStats = relationStatsMap?.get(player.account_id);
 
+        // If no current user or this is the current user's row - show empty
         if (
           !currentUser.accountId ||
           player.account_id === currentUser.accountId
         ) {
-          return <span className="text-[#e6ca9c]/40">—</span>;
+          return null;
         }
 
         if (!relationStats) {
@@ -202,45 +257,21 @@ export const TeamTable: React.FC<TeamTableProps> = ({
           <div className="w-full flex gap-[10px]">
             {/* With player stats */}
             <div className="flex-1 flex items-center justify-center gap-1">
-              <span
-                className={`text-sm font-medium ${
-                  relationStats.withPlayer.wins > 0
-                    ? "text-[#2dc864]"
-                    : "text-[#e6ca9c]"
-                }`}
-              >
+              <span className="text-sm font-medium text-[#e6ca9c]">
                 {relationStats.withPlayer.wins}
               </span>
               <span className="text-xs text-[#9FA6AD]">/</span>
-              <span
-                className={`text-sm font-medium ${
-                  relationStats.withPlayer.losses > 0
-                    ? "text-[#c83c3c]"
-                    : "text-[#e6ca9c]"
-                }`}
-              >
+              <span className="text-sm font-medium text-[#e6ca9c]">
                 {relationStats.withPlayer.losses}
               </span>
             </div>
             {/* Against player stats */}
             <div className="flex-1 flex items-center justify-center gap-1">
-              <span
-                className={`text-sm font-medium ${
-                  relationStats.againstPlayer.wins > 0
-                    ? "text-[#2dc864]"
-                    : "text-[#e6ca9c]"
-                }`}
-              >
+              <span className="text-sm font-medium text-[#e6ca9c]">
                 {relationStats.againstPlayer.wins}
               </span>
               <span className="text-xs text-[#9FA6AD]">/</span>
-              <span
-                className={`text-sm font-medium ${
-                  relationStats.againstPlayer.losses > 0
-                    ? "text-[#c83c3c]"
-                    : "text-[#e6ca9c]"
-                }`}
-              >
+              <span className="text-sm font-medium text-[#e6ca9c]">
                 {relationStats.againstPlayer.losses}
               </span>
             </div>
@@ -251,7 +282,8 @@ export const TeamTable: React.FC<TeamTableProps> = ({
       case "tags": {
         const tags = playerTagsMap.get(player.account_id);
 
-        if (!tags || tags.length === 0) {
+        // If player not in map yet, data is still loading
+        if (!playerTagsMap.has(player.account_id)) {
           return (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-[#e6ca9c]/40 text-xs">-</span>
@@ -259,64 +291,10 @@ export const TeamTable: React.FC<TeamTableProps> = ({
           );
         }
 
-        const renderTagIcon = (tag: PlayerTag) => {
-          const iconStyle = { width: "23px", height: "23px" };
-          const color =
-            PLAYER_TAG_COLORS[
-              tag.type.toUpperCase() as keyof typeof PLAYER_TAG_COLORS
-            ];
-
-          const getTooltip = () => {
-            const tagName = t(`activeMatch.tags.${tag.type}`);
-
-            switch (tag.type) {
-              case "smurf":
-                return `${tagName}: ${t("activeMatch.tags.tooltips.smurf", {
-                  totalValue: tag.totalValue,
-                  recentValue: tag.recentValue,
-                  days: 14,
-                })}`;
-              case "loser":
-                return `${tagName}: ${t("activeMatch.tags.tooltips.loser", {
-                  recentValue: tag.recentValue,
-                  days: 14,
-                })}`;
-              case "spammer":
-                return `${tagName}: ${t("activeMatch.tags.tooltips.spammer", {
-                  value: tag.value,
-                  days: 14,
-                })}`;
-              case "cheater":
-                return `${tagName}: ${t("activeMatch.tags.tooltips.cheater", {
-                  value: tag.value,
-                  matches: PLAYER_TAG_THRESHOLDS.CHEATER_MATCHES_COUNT,
-                })}`;
-              default:
-                return "";
-            }
-          };
-
-          const iconElement = (() => {
-            switch (tag.type) {
-              case "smurf":
-                return <FaMask style={{ ...iconStyle, color }} />;
-              case "loser":
-                return <FaAnchor style={{ ...iconStyle, color }} />;
-              case "spammer":
-                return <FaArrowRotateRight style={{ ...iconStyle, color }} />;
-              case "cheater":
-                return <GiSkullCrossedBones style={{ ...iconStyle, color }} />;
-              default:
-                return null;
-            }
-          })();
-
-          return (
-            <div title={getTooltip()} className="cursor-default">
-              {iconElement}
-            </div>
-          );
-        };
+        // If player in map but no tags, show empty cell
+        if (!tags || tags.length === 0) {
+          return <div className="w-full h-full" />;
+        }
 
         const getLayoutClass = () => {
           if (tags.length === 1) return "flex items-center justify-center";
@@ -334,14 +312,14 @@ export const TeamTable: React.FC<TeamTableProps> = ({
                 <>
                   <div className="flex flex-row gap-1">
                     {tags.slice(0, 2).map((tag, index) => (
-                      <div key={index}>{renderTagIcon(tag)}</div>
+                      <div key={index}>{renderPlayerTag(tag)}</div>
                     ))}
                   </div>
-                  <div>{renderTagIcon(tags[2])}</div>
+                  <div>{renderPlayerTag(tags[2])}</div>
                 </>
               ) : (
                 tags.map((tag, index) => (
-                  <div key={index}>{renderTagIcon(tag)}</div>
+                  <div key={index}>{renderPlayerTag(tag)}</div>
                 ))
               )}
             </div>
@@ -354,27 +332,45 @@ export const TeamTable: React.FC<TeamTableProps> = ({
     }
   };
 
+  // Only show first 6 players (team size)
+  const displayedPlayers = players.slice(0, 6);
+
   return (
-    <MatchTable>
-      {players.slice(0, 6).map((player, index) => (
-        <TableRow key={player.account_id || index}>
-          {MATCH_TABLE_COLUMNS.map((column) => (
-            <TableColumn
-              key={column.id}
-              flex={column.flex}
-              className={column.align === "left" ? "justify-start" : ""}
-              noPadding={
-                column.id === "hero" ||
-                column.id === "rank" ||
-                column.id === "recent_matches" ||
-                column.id === "tags"
-              }
-            >
-              {renderColumnContent(column.id, player)}
-            </TableColumn>
+    <div className="relative flex">
+      {/* Party brackets container */}
+      <div className="relative flex-shrink-0" style={{ width: "60px" }}>
+        <div
+          className="absolute top-0 left-0 right-0"
+          style={{ height: `${displayedPlayers.length * 52}px` }}
+        >
+          <PartyBrackets players={displayedPlayers} partyGroups={partyGroups} />
+        </div>
+      </div>
+
+      {/* Table container */}
+      <div className="flex-1">
+        <MatchTable>
+          {displayedPlayers.map((player, index) => (
+            <TableRow key={player.account_id || index}>
+              {MATCH_TABLE_COLUMNS.map((column) => (
+                <TableColumn
+                  key={column.id}
+                  flex={column.flex}
+                  className={column.align === "left" ? "justify-start" : ""}
+                  noPadding={
+                    column.id === "hero" ||
+                    column.id === "rank" ||
+                    column.id === "recent_matches" ||
+                    column.id === "tags"
+                  }
+                >
+                  {renderColumnContent(column.id, player)}
+                </TableColumn>
+              ))}
+            </TableRow>
           ))}
-        </TableRow>
-      ))}
-    </MatchTable>
+        </MatchTable>
+      </div>
+    </div>
   );
 };
