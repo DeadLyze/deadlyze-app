@@ -26,7 +26,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
             src={heroIconUrl}
             alt={`Hero ${player.hero_id}`}
             className="w-full h-full object-contain"
-            loading="lazy"
           />
         ) : (
           <span className="text-[#e6ca9c]/40">?</span>
@@ -39,7 +38,6 @@ export const TeamTable: React.FC<TeamTableProps> = ({
             src={rankImageUrl}
             alt="Rank"
             className="max-h-[50px] w-auto object-contain"
-            loading="lazy"
           />
         ) : (
           <span className="text-[#e6ca9c]/40">?</span>
@@ -83,6 +81,63 @@ export const TeamTable: React.FC<TeamTableProps> = ({
           </div>
         );
 
+      case "recent_matches":
+        const matchStats = matchStatsMap?.get(player.account_id);
+        const recentMatches = matchStats?.last5Matches || [];
+        return (
+          <div className="flex w-full h-full gap-0">
+            {recentMatches.map((match, idx) => {
+              const isWin = match.match_result === match.player_team;
+              const heroIconUrl = heroIconUrls?.get(match.hero_id);
+              const glowColor = isWin
+                ? "rgba(45, 200, 100, 0.6)"
+                : "rgba(200, 60, 60, 0.6)";
+              const barColor = isWin
+                ? "rgba(45, 200, 100, 0.9)"
+                : "rgba(200, 60, 60, 0.9)";
+              const barGlow = isWin
+                ? "rgba(45, 200, 100, 0.4)"
+                : "rgba(200, 60, 60, 0.4)";
+
+              return (
+                <div
+                  key={idx}
+                  className="flex-1 flex items-center justify-center relative"
+                  style={{
+                    background: `radial-gradient(ellipse 100% 80% at 50% 75%, ${glowColor} 0%, transparent 70%)`,
+                  }}
+                >
+                  {heroIconUrl ? (
+                    <img
+                      src={heroIconUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full" />
+                  )}
+                  {/* Bottom bar with glow */}
+                  <div
+                    className="absolute bottom-0 left-0 right-0 h-[3px]"
+                    style={{
+                      background: `linear-gradient(to top, ${barColor} 0%, ${barGlow} 100%)`,
+                      boxShadow: `0 -4px 8px ${barGlow}`,
+                    }}
+                  />
+                </div>
+              );
+            })}
+            {/* Fill empty slots if less than 5 matches */}
+            {Array.from({ length: 5 - recentMatches.length }).map((_, idx) => (
+              <div
+                key={`empty-${idx}`}
+                className="flex-1"
+                style={{ backgroundColor: "#1a1a1a" }}
+              />
+            ))}
+          </div>
+        );
+
       default:
         return null;
     }
@@ -97,7 +152,11 @@ export const TeamTable: React.FC<TeamTableProps> = ({
               key={column.id}
               flex={column.flex}
               className={column.align === "left" ? "justify-start" : ""}
-              noPadding={column.id === "hero" || column.id === "rank"}
+              noPadding={
+                column.id === "hero" ||
+                column.id === "rank" ||
+                column.id === "recent_matches"
+              }
             >
               {renderColumnContent(column.id, player)}
             </TableColumn>

@@ -28,6 +28,7 @@ export interface MatchHistoryItem {
   match_result: number;
   player_team: number;
   start_time: number;
+  hero_id: number;
 }
 
 export interface MatchStats {
@@ -37,6 +38,7 @@ export interface MatchStats {
   recentMatches: number;
   recentWins: number;
   recentWinrate: number;
+  last5Matches: MatchHistoryItem[];
 }
 
 /**
@@ -141,6 +143,7 @@ export class PlayerDataService {
         recentMatches: 0,
         recentWins: 0,
         recentWinrate: 0,
+        last5Matches: [],
       };
     }
   }
@@ -159,8 +162,17 @@ export class PlayerDataService {
         recentMatches: 0,
         recentWins: 0,
         recentWinrate: 0,
+        last5Matches: [],
       };
     }
+
+    // Sort by start_time descending (most recent first)
+    const sortedHistory = [...matchHistory].sort(
+      (a, b) => b.start_time - a.start_time
+    );
+
+    // Get last 5 matches
+    const last5Matches = sortedHistory.slice(0, 5);
 
     // Calculate all time stats
     const totalMatches = matchHistory.length;
@@ -192,6 +204,7 @@ export class PlayerDataService {
       recentMatches: recentMatches.length,
       recentWins,
       recentWinrate,
+      last5Matches,
     };
   }
 }

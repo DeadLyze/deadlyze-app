@@ -32,6 +32,12 @@ export const MATCH_TABLE_COLUMNS: ColumnConfig[] = [
     flex: `0 0 ${COLUMN_WIDTH.MATCHES}px`,
     align: "center",
   },
+  {
+    id: "recent_matches",
+    label: "Recent Matches",
+    flex: `0 0 ${COLUMN_WIDTH.RECENT_MATCHES}px`,
+    align: "center",
+  },
 ];
 
 // Search button configuration

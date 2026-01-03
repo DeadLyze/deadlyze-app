@@ -8,6 +8,7 @@ export const COLUMN_WIDTH = {
   RANK: 75,
   PLAYER: 150,
   MATCHES: 120,
+  RECENT_MATCHES: 250,
 } as const;
 
 // Table styling
@@ -21,6 +22,8 @@ export const COLORS = {
   TEXT_SECONDARY: "#9FA6AD",
   ACCENT_GREEN: "#21C271",
   GOLD: "#e6ca9c",
+  WIN_GREEN: "#2d5a3f",
+  LOSS_RED: "#5a2d2d",
 } as const;
 
 // Retry timing

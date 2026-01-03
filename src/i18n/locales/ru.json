@@ -15,7 +15,8 @@
         "rank": "РАНГ",
         "player": "ИГРОК",
         "matches": "МАТЧИ",
-        "matchesSubtitle": "всего | 14 дней"
+        "matchesSubtitle": "всего | 14 дней",
+        "recent_matches": "ПОСЛЕДНИЕ МАТЧИ"
       }
     }
   },

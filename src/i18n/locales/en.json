@@ -15,7 +15,8 @@
         "rank": "RANK",
         "player": "PLAYER",
         "matches": "MATCHES",
-        "matchesSubtitle": "all time | 14 days"
+        "matchesSubtitle": "all time | 14 days",
+        "recent_matches": "RECENT MATCHES"
       }
     }
   },

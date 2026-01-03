@@ -108,6 +108,31 @@ function ActiveMatchPage() {
       );
       setMatchStatsMap(statsMap);
 
+      // Collect all hero IDs from last 5 matches
+      const last5HeroIds = new Set<number>();
+      statsMap.forEach((stats) => {
+        stats.last5Matches.forEach((match) => {
+          last5HeroIds.add(match.hero_id);
+        });
+      });
+
+      // Load heroes from last 5 matches if not already loaded
+      const missingHeroIds = Array.from(last5HeroIds).filter(
+        (id) => !heroUrls.has(id)
+      );
+      if (missingHeroIds.length > 0) {
+        const additionalHeroMap = await AssetsService.fetchHeroesByIds(
+          missingHeroIds
+        );
+        missingHeroIds.forEach((heroId) => {
+          const hero = additionalHeroMap.get(heroId);
+          if (hero?.images.selection_image_webp) {
+            heroUrls.set(heroId, hero.images.selection_image_webp);
+          }
+        });
+        setHeroIconUrls(new Map(heroUrls));
+      }
+
       // Retry failed loads after a short delay
       if (failedHeroes.length > 0 || failedRanks.length > 0) {
         setTimeout(
