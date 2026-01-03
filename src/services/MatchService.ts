@@ -24,14 +24,11 @@ export class MatchService {
    */
   static async fetchMatchData(matchId: string): Promise<MatchData> {
     try {
-      console.log(`Fetching match data for ID: ${matchId}`);
       const matchData = await invoke<MatchData>("fetch_match_data", {
         matchId,
       });
-      console.log("Match data received:", matchData);
       return matchData;
     } catch (error) {
-      console.error("Failed to fetch match data:", error);
       throw new Error(
         typeof error === "string"
           ? error

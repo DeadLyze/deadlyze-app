@@ -1,3 +1,5 @@
+import { COLUMN_WIDTH } from "../../constants/uiConstants";
+
 export interface ColumnConfig {
   id: string;
   label: string;
@@ -9,25 +11,25 @@ export const MATCH_TABLE_COLUMNS: ColumnConfig[] = [
   {
     id: "hero",
     label: "Hero",
-    flex: "0 0 50px",
+    flex: `0 0 ${COLUMN_WIDTH.HERO}px`,
     align: "center",
   },
   {
     id: "rank",
     label: "Rank",
-    flex: "0 0 75px",
+    flex: `0 0 ${COLUMN_WIDTH.RANK}px`,
     align: "center",
   },
   {
     id: "player",
     label: "Player",
-    flex: "0 0 150px",
+    flex: `0 0 ${COLUMN_WIDTH.PLAYER}px`,
     align: "left",
   },
   {
     id: "matches",
     label: "Matches",
-    flex: "0 0 120px",
+    flex: `0 0 ${COLUMN_WIDTH.MATCHES}px`,
     align: "center",
   },
 ];

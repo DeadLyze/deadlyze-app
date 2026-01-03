@@ -23,6 +23,10 @@ path = "batch_mmr.rs"
 name = "live_match_players"
 path = "live_match_players.rs"
 
+[[bin]]
+name = "player_match_history"
+path = "player_match_history.rs"
+
 [dependencies]
 tokio = { version = "1.42", features = ["full"] }
 reqwest = { version = "0.13.1", default-features = false, features = ["json", "http2", "gzip", "native-tls"] }

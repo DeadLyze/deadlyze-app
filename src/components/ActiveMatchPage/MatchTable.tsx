@@ -56,5 +56,9 @@ interface MatchTableProps {
 }
 
 export const MatchTable: React.FC<MatchTableProps> = ({ children }) => {
-  return <div className="flex flex-col w-full gap-0.5">{children}</div>;
+  return (
+    <div className="flex flex-col w-full gap-0.5 bg-[#10262f]/40 rounded-lg p-1">
+      {children}
+    </div>
+  );
 };

@@ -11,11 +11,12 @@ import {
   AssetsService,
   PlayerDataService,
   Rank,
+  MatchStats,
 } from "../../services";
+import { ASSET_RETRY_DELAY_MS } from "../../constants/uiConstants";
 
 function ActiveMatchPage() {
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(false);
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [error, setError] = useState<boolean>(false);
   const [heroIconUrls, setHeroIconUrls] = useState<Map<number, string>>(
@@ -24,20 +25,20 @@ function ActiveMatchPage() {
   const [rankImageUrls, setRankImageUrls] = useState<Map<number, string>>(
     new Map()
   );
+  const [matchStatsMap, setMatchStatsMap] = useState<Map<number, MatchStats>>(
+    new Map()
+  );
   const [ranks, setRanks] = useState<Rank[]>([]);
-  const [failedHeroIds, setFailedHeroIds] = useState<number[]>([]);
-  const [failedAccountIds, setFailedAccountIds] = useState<number[]>([]);
 
   // Load ranks once on mount
+  // Note: In development mode with React StrictMode, this effect will run twice
+  // This is expected behavior and doesn't affect production builds
   useEffect(() => {
     const loadRanks = async () => {
       try {
         const ranksData = await AssetsService.fetchAllRanks();
         setRanks(ranksData);
-        console.log(`Loaded ${ranksData.length} ranks`);
-      } catch (error) {
-        console.error("Failed to load ranks:", error);
-      }
+      } catch (error) {}
     };
 
     loadRanks();
@@ -67,8 +68,6 @@ function ActiveMatchPage() {
       });
 
       setHeroIconUrls(heroUrls);
-      setFailedHeroIds(failedHeroes);
-      console.log(`Loaded ${heroUrls.size}/${heroIds.length} hero icons`);
 
       // Load player MMR and rank images
       const accountIds = allPlayers.map((p) => p.account_id);
@@ -96,17 +95,24 @@ function ActiveMatchPage() {
       });
 
       setRankImageUrls(rankUrls);
-      setFailedAccountIds(failedRanks);
-      console.log(`Loaded ${rankUrls.size}/${accountIds.length} rank images`);
+
+      // Load match statistics for all players
+      const statsMap = new Map<number, MatchStats>();
+      await Promise.all(
+        accountIds.map(async (accountId) => {
+          const stats = await PlayerDataService.fetchPlayerMatchStats(
+            accountId
+          );
+          statsMap.set(accountId, stats);
+        })
+      );
+      setMatchStatsMap(statsMap);
 
       // Retry failed loads after a short delay
       if (failedHeroes.length > 0 || failedRanks.length > 0) {
-        console.log(
-          `Retrying failed loads: ${failedHeroes.length} heroes, ${failedRanks.length} ranks`
-        );
         setTimeout(
           () => retryFailedAssets(failedHeroes, failedRanks, mmrMap),
-          1000
+          ASSET_RETRY_DELAY_MS
         );
       }
     };
@@ -120,32 +126,22 @@ function ActiveMatchPage() {
       if (failedHeroes.length > 0) {
         const retryHeroMap = await AssetsService.fetchHeroesByIds(failedHeroes);
         const newHeroUrls = new Map(heroIconUrls);
-        const stillFailedHeroes: number[] = [];
 
         failedHeroes.forEach((heroId) => {
           const hero = retryHeroMap.get(heroId);
           if (hero?.images.selection_image_webp) {
             newHeroUrls.set(heroId, hero.images.selection_image_webp);
-          } else {
-            stillFailedHeroes.push(heroId);
           }
         });
 
         if (newHeroUrls.size > heroIconUrls.size) {
           setHeroIconUrls(newHeroUrls);
-          setFailedHeroIds(stillFailedHeroes);
-          console.log(
-            `Retry: Loaded ${
-              newHeroUrls.size - heroIconUrls.size
-            } more hero icons`
-          );
         }
       }
 
       // Retry rank images
       if (failedRanks.length > 0) {
         const newRankUrls = new Map(rankImageUrls);
-        const stillFailedRanks: number[] = [];
 
         failedRanks.forEach((accountId) => {
           const mmr = mmrMap.get(accountId);
@@ -157,20 +153,12 @@ function ActiveMatchPage() {
             );
             if (imageUrl) {
               newRankUrls.set(accountId, imageUrl);
-            } else {
-              stillFailedRanks.push(accountId);
             }
           }
         });
 
         if (newRankUrls.size > rankImageUrls.size) {
           setRankImageUrls(newRankUrls);
-          setFailedAccountIds(stillFailedRanks);
-          console.log(
-            `Retry: Loaded ${
-              newRankUrls.size - rankImageUrls.size
-            } more rank images`
-          );
         }
       }
     };
@@ -179,18 +167,12 @@ function ActiveMatchPage() {
   }, [matchData, ranks]);
   const handleSearch = async (matchId: string) => {
     setError(false);
-    setIsLoading(true);
 
     try {
-      console.log("Searching for match:", matchId);
       const data = await MatchService.fetchMatchData(matchId);
       setMatchData(data);
-      console.log("Match data loaded successfully");
     } catch (err) {
       setError(true);
-      console.error("Error fetching match data:", err);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -199,7 +181,7 @@ function ActiveMatchPage() {
   };
 
   const handleInfo = () => {
-    console.log("Info clicked");
+    // Info clicked
   };
 
   return (
@@ -253,17 +235,19 @@ function ActiveMatchPage() {
       ) : (
         <div className="w-full h-full flex items-center justify-center">
           <div className="w-full max-w-[1400px] px-5">
-            <div className="bg-[#10262f]/40 rounded-lg p-1">
+            <div>
               <TeamTable
                 players={matchData.amber_team}
                 heroIconUrls={heroIconUrls}
                 rankImageUrls={rankImageUrls}
+                matchStatsMap={matchStatsMap}
               />
               <TableHeader />
               <TeamTable
                 players={matchData.sapphire_team}
                 heroIconUrls={heroIconUrls}
                 rankImageUrls={rankImageUrls}
+                matchStatsMap={matchStatsMap}
               />
             </div>
           </div>

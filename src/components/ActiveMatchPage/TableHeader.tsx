@@ -1,16 +1,36 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { MATCH_TABLE_COLUMNS } from "./tableConfig";
+import { TABLE_HEADER_HEIGHT } from "../../constants/uiConstants";
 
 export const TableHeader: React.FC = () => {
   const { t } = useTranslation();
 
+  const renderColumnHeader = (columnId: string) => {
+    if (columnId === "matches") {
+      return (
+        <div className="flex flex-col items-center justify-center leading-none gap-[2px]">
+          <div className="text-xs font-medium uppercase tracking-wide">
+            {t("activeMatch.table.columns.matches")}
+          </div>
+          <div className="text-[9px] font-normal opacity-80">
+            {t("activeMatch.table.columns.matchesSubtitle")}
+          </div>
+        </div>
+      );
+    }
+    return t(`activeMatch.table.columns.${columnId}`);
+  };
+
   return (
-    <div className="flex w-full h-[40px] bg-[#0a1a1f]/80 -mx-1 px-1">
+    <div
+      className="flex w-full -mx-1 px-1"
+      style={{ height: `${TABLE_HEADER_HEIGHT}px` }}
+    >
       {MATCH_TABLE_COLUMNS.map((column) => (
         <div
           key={column.id}
-          className={`flex items-center text-[#9FA6AD] text-xs font-medium uppercase tracking-wide border-r border-[#21c271]/10 last:border-r-0 ${
+          className={`flex items-center text-[#9FA6AD] text-xs font-medium uppercase tracking-wide ${
             column.id === "player"
               ? "justify-center"
               : column.align === "left"
@@ -24,7 +44,7 @@ export const TableHeader: React.FC = () => {
             overflow: "hidden",
           }}
         >
-          {t(`activeMatch.table.columns.${column.id}`)}
+          {renderColumnHeader(column.id)}
         </div>
       ))}
     </div>

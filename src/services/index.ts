@@ -7,4 +7,8 @@ export type { SteamData, UserData, AppCache } from "./CacheService";
 export type { SteamInfo } from "./SteamService";
 export type { MatchData, MatchPlayer } from "./MatchService";
 export type { Hero, HeroImages, Rank, RankImages } from "./AssetsService";
-export type { PlayerMMR } from "./PlayerDataService";
+export type {
+  PlayerMMR,
+  MatchHistoryItem,
+  MatchStats,
+} from "./PlayerDataService";

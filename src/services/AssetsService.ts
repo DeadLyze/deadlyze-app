@@ -3,7 +3,12 @@
  * Documentation: https://assets.deadlock-api.com/scalar
  */
 
-const BASE_URL = "https://assets.deadlock-api.com";
+import {
+  ASSETS_API_BASE_URL,
+  HERO_FETCH_DELAY_MS,
+} from "../constants/apiConstants";
+
+const BASE_URL = ASSETS_API_BASE_URL;
 
 /**
  * Utility function to add delay between requests
@@ -52,7 +57,6 @@ export class AssetsService {
   static async fetchHeroById(heroId: number): Promise<Hero> {
     try {
       const url = `${BASE_URL}/v2/heroes/${heroId}`;
-      console.log(`Fetching hero data for ID: ${heroId}`);
 
       const response = await fetch(url, {
         method: "GET",
@@ -66,10 +70,8 @@ export class AssetsService {
       }
 
       const hero: Hero = await response.json();
-      console.log(`Hero data received:`, hero.name);
       return hero;
     } catch (error) {
-      console.error(`Failed to fetch hero ${heroId}:`, error);
       throw new Error(
         typeof error === "string"
           ? error
@@ -86,42 +88,26 @@ export class AssetsService {
   static async fetchHeroesByIds(heroIds: number[]): Promise<Map<number, Hero>> {
     try {
       const uniqueIds = [...new Set(heroIds)];
-      console.log(`Fetching ${uniqueIds.length} heroes...`);
 
       const heroPromises = uniqueIds.map(async (id, index) => {
-        // Add 1ms delay between requests to avoid rate limiting
+        // Add small delay between requests to avoid rate limiting
         if (index > 0) {
-          await delay(1);
+          await delay(HERO_FETCH_DELAY_MS);
         }
-        return this.fetchHeroById(id).catch((error) => {
-          console.error(`Failed to fetch hero ${id}:`, error);
-          return null;
-        });
+        return this.fetchHeroById(id).catch(() => null);
       });
 
       const heroes = await Promise.all(heroPromises);
       const heroMap = new Map<number, Hero>();
-      const failedIds: number[] = [];
 
-      heroes.forEach((hero, index) => {
+      heroes.forEach((hero) => {
         if (hero) {
           heroMap.set(hero.id, hero);
-        } else {
-          failedIds.push(uniqueIds[index]);
         }
       });
 
-      console.log(
-        `Successfully fetched ${heroMap.size}/${uniqueIds.length} heroes`
-      );
-
-      if (failedIds.length > 0) {
-        console.log(`Failed to fetch heroes: ${failedIds.join(", ")}`);
-      }
-
       return heroMap;
     } catch (error) {
-      console.error("Failed to batch fetch heroes:", error);
       throw new Error("Failed to fetch hero data");
     }
   }
@@ -137,7 +123,6 @@ export class AssetsService {
       const hero = await this.fetchHeroById(heroId);
       return hero.images.selection_image_webp || "";
     } catch (error) {
-      console.error(`Failed to get icon for hero ${heroId}:`, error);
       return "";
     }
   }
@@ -149,7 +134,6 @@ export class AssetsService {
   static async fetchAllRanks(): Promise<Rank[]> {
     try {
       const url = `${BASE_URL}/v2/ranks`;
-      console.log("Fetching all ranks...");
 
       const response = await fetch(url, {
         method: "GET",
@@ -163,10 +147,8 @@ export class AssetsService {
       }
 
       const ranks: Rank[] = await response.json();
-      console.log(`Fetched ${ranks.length} ranks`);
       return ranks;
     } catch (error) {
-      console.error("Failed to fetch ranks:", error);
       throw new Error("Failed to fetch rank data");
     }
   }
@@ -184,21 +166,9 @@ export class AssetsService {
     ranks: Rank[]
   ): string {
     const rank = ranks.find((r) => r.tier === division);
-    if (!rank) {
-      console.warn(`Rank not found for division ${division}`);
-      return "";
-    }
+    if (!rank) return "";
 
     const subrankKey = `small_subrank${divisionTier}_webp` as keyof RankImages;
-    const imageUrl = rank.images[subrankKey];
-
-    if (!imageUrl) {
-      console.warn(
-        `Subrank image not found for division ${division}, tier ${divisionTier}`
-      );
-      return "";
-    }
-
-    return imageUrl;
+    return rank.images[subrankKey] || "";
   }
 }

@@ -14,7 +14,8 @@
         "hero": "ГЕРОЙ",
         "rank": "РАНГ",
         "player": "ИГРОК",
-        "matches": "МАТЧИ"
+        "matches": "МАТЧИ",
+        "matchesSubtitle": "всего | 14 дней"
       }
     }
   },

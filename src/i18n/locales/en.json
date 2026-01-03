@@ -14,7 +14,8 @@
         "hero": "HERO",
         "rank": "RANK",
         "player": "PLAYER",
-        "matches": "MATCHES"
+        "matches": "MATCHES",
+        "matchesSubtitle": "all time | 14 days"
       }
     }
   },
