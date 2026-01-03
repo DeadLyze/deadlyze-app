@@ -19,7 +19,11 @@
         "recent_matches": "ПОСЛЕДНИЕ МАТЧИ",
         "relation": "МАТЧИ",
         "relationSubtitle": "вместе | против",
-        "tags": "МЕТКИ"
+        "tags": "МЕТКИ",
+        "current_hero": "ТЕКУЩИЙ ГЕРОЙ",
+        "current_heroSubtitle": "матчей | K/D",
+        "current_streak": "ТЕКУЩАЯ СЕРИЯ",
+        "current_streakSubtitle": "всего | герой"
       }
     },
     "tags": {

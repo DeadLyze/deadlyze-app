@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { FaAnchor, FaMask, FaArrowRotateRight } from "react-icons/fa6";
+import {
+  FaAnchor,
+  FaMask,
+  FaPersonWalkingArrowLoopLeft,
+} from "react-icons/fa6";
 import { GiSkullCrossedBones } from "react-icons/gi";
 import { MatchTable, TableRow, TableColumn } from "./MatchTable";
 import { PartyBrackets } from "./PartyBrackets";
@@ -115,7 +119,9 @@ export const TeamTable: React.FC<TeamTableProps> = ({
         case "loser":
           return <FaAnchor style={{ ...iconStyle, color }} />;
         case "spammer":
-          return <FaArrowRotateRight style={{ ...iconStyle, color }} />;
+          return (
+            <FaPersonWalkingArrowLoopLeft style={{ ...iconStyle, color }} />
+          );
         case "cheater":
           return <GiSkullCrossedBones style={{ ...iconStyle, color }} />;
         default:
@@ -193,6 +199,63 @@ export const TeamTable: React.FC<TeamTableProps> = ({
             </div>
           </div>
         );
+
+      case "current_hero": {
+        const heroStats = matchStatsMap?.get(
+          player.account_id
+        )?.currentHeroStats;
+        if (!heroStats || heroStats.matches === 0) {
+          return <span className="text-[#e6ca9c]/40">—</span>;
+        }
+        return (
+          <div className="w-full flex gap-[10px]">
+            {/* Matches */}
+            <div className="flex-1 flex flex-col items-center">
+              <span className="text-[#e6ca9c] text-sm font-medium">
+                {heroStats.matches}
+              </span>
+              <span className="text-[#9FA6AD] text-xs font-normal">
+                {heroStats.winrate}%
+              </span>
+            </div>
+            {/* K/D Ratio */}
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <span className="text-[#e6ca9c] text-sm font-medium">
+                {heroStats.kd.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        );
+      }
+
+      case "current_streak": {
+        const stats = matchStatsMap?.get(player.account_id);
+        if (!stats) {
+          return <span className="text-[#e6ca9c]/40">—</span>;
+        }
+
+        const formatStreak = (streak: number | null): string => {
+          if (streak === null || streak === 0) return "—";
+          return streak > 0 ? `+${streak}` : `${streak}`;
+        };
+
+        return (
+          <div className="w-full flex gap-[10px]">
+            {/* Total streak */}
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-[#e6ca9c] text-sm font-medium">
+                {formatStreak(stats.currentStreak)}
+              </span>
+            </div>
+            {/* Hero streak */}
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-[#e6ca9c] text-sm font-medium">
+                {formatStreak(stats.currentHeroStreak)}
+              </span>
+            </div>
+          </div>
+        );
+      }
 
       case "recent_matches": {
         const recentMatchStats = matchStatsMap?.get(player.account_id);

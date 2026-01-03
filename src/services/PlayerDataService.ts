@@ -32,6 +32,9 @@ export interface MatchHistoryItem {
   player_team: number;
   start_time: number;
   hero_id: number;
+  player_kills?: number;
+  player_deaths?: number;
+  player_assists?: number;
 }
 
 export interface MatchStats {
@@ -43,6 +46,18 @@ export interface MatchStats {
   recentWinrate: number;
   last5Matches: MatchHistoryItem[];
   recentMatchHistory: MatchHistoryItem[];
+  currentHeroStats: {
+    heroId: number;
+    matches: number;
+    wins: number;
+    winrate: number;
+    avgKills: number;
+    avgDeaths: number;
+    avgAssists: number;
+    kd: number;
+  } | null;
+  currentStreak: number;
+  currentHeroStreak: number | null;
 }
 
 // === Match Metadata Interfaces ===
@@ -193,9 +208,13 @@ export class PlayerDataService {
   /**
    * Fetch match history for a player and calculate statistics
    * @param accountId - Player account ID
+   * @param currentHeroId - Current hero ID for calculating hero-specific stats
    * @returns Match statistics (total and last 14 days)
    */
-  static async fetchPlayerMatchStats(accountId: number): Promise<MatchStats> {
+  static async fetchPlayerMatchStats(
+    accountId: number,
+    currentHeroId?: number
+  ): Promise<MatchStats> {
     try {
       const url = `${BASE_URL}/v1/players/${accountId}/match-history?only_stored_history=true`;
 
@@ -211,7 +230,7 @@ export class PlayerDataService {
       }
 
       const matchHistory: MatchHistoryItem[] = await response.json();
-      return this.calculateMatchStats(matchHistory);
+      return this.calculateMatchStats(matchHistory, currentHeroId);
     } catch (error) {
       return {
         totalMatches: 0,
@@ -222,6 +241,7 @@ export class PlayerDataService {
         recentWinrate: 0,
         last5Matches: [],
         recentMatchHistory: [],
+        currentHeroStats: null,
       };
     }
   }
@@ -229,9 +249,13 @@ export class PlayerDataService {
   /**
    * Calculate match statistics from match history
    * @param matchHistory - Array of match history items
+   * @param currentHeroId - Current hero ID for calculating hero-specific stats
    * @returns Match statistics (total and last 14 days)
    */
-  static calculateMatchStats(matchHistory: MatchHistoryItem[]): MatchStats {
+  static calculateMatchStats(
+    matchHistory: MatchHistoryItem[],
+    currentHeroId?: number
+  ): MatchStats {
     if (!matchHistory || matchHistory.length === 0) {
       return {
         totalMatches: 0,
@@ -242,6 +266,7 @@ export class PlayerDataService {
         recentWinrate: 0,
         last5Matches: [],
         recentMatchHistory: [],
+        currentHeroStats: null,
       };
     }
 
@@ -253,39 +278,152 @@ export class PlayerDataService {
     // Get last 5 matches
     const last5Matches = sortedHistory.slice(0, 5);
 
-    // Calculate all time stats
-    const totalMatches = matchHistory.length;
-    const totalWins = matchHistory.filter(
-      (match) => match.match_result === match.player_team
-    ).length;
-    const totalWinrate =
-      totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
-
-    // Calculate last 14 days stats
+    // Calculate stats in single pass (O(n) instead of O(2n))
     const currentTime = Math.floor(Date.now() / 1000);
     const twoWeeksAgo = currentTime - TWO_WEEKS_IN_SECONDS;
 
-    const recentMatches = matchHistory.filter(
-      (match) => match.start_time >= twoWeeksAgo
-    );
-    const recentWins = recentMatches.filter(
-      (match) => match.match_result === match.player_team
-    ).length;
+    let totalMatches = 0;
+    let totalWins = 0;
+    let recentMatchCount = 0;
+    let recentWins = 0;
+    const recentMatchHistory: MatchHistoryItem[] = [];
+
+    // Hero-specific stats
+    let heroMatches = 0;
+    let heroWins = 0;
+    let heroTotalKills = 0;
+    let heroTotalDeaths = 0;
+    let heroTotalAssists = 0;
+
+    for (const match of matchHistory) {
+      const isWin = match.match_result === match.player_team;
+      const isRecent = match.start_time >= twoWeeksAgo;
+      const isCurrentHero =
+        currentHeroId !== undefined && match.hero_id === currentHeroId;
+
+      // Total stats
+      totalMatches++;
+      if (isWin) totalWins++;
+
+      // Recent stats
+      if (isRecent) {
+        recentMatchCount++;
+        if (isWin) recentWins++;
+        recentMatchHistory.push(match);
+      }
+
+      // Current hero stats
+      if (isCurrentHero) {
+        heroMatches++;
+        if (isWin) heroWins++;
+        if (match.player_kills !== undefined)
+          heroTotalKills += match.player_kills;
+        if (match.player_deaths !== undefined)
+          heroTotalDeaths += match.player_deaths;
+        if (match.player_assists !== undefined)
+          heroTotalAssists += match.player_assists;
+      }
+    }
+
+    const totalWinrate =
+      totalMatches > 0 ? Math.round((totalWins / totalMatches) * 100) : 0;
     const recentWinrate =
-      recentMatches.length > 0
-        ? Math.round((recentWins / recentMatches.length) * 100)
+      recentMatchCount > 0
+        ? Math.round((recentWins / recentMatchCount) * 100)
         : 0;
+
+    // Calculate hero-specific stats
+    let currentHeroStats = null;
+    if (currentHeroId !== undefined && heroMatches > 0) {
+      const avgKills = Math.round((heroTotalKills / heroMatches) * 10) / 10;
+      const avgDeaths = Math.round((heroTotalDeaths / heroMatches) * 10) / 10;
+      const avgAssists = Math.round((heroTotalAssists / heroMatches) * 10) / 10;
+      const kd =
+        avgDeaths > 0
+          ? Math.round((avgKills / avgDeaths) * 100) / 100
+          : avgKills;
+
+      currentHeroStats = {
+        heroId: currentHeroId,
+        matches: heroMatches,
+        wins: heroWins,
+        winrate: Math.round((heroWins / heroMatches) * 100),
+        avgKills,
+        avgDeaths,
+        avgAssists,
+        kd,
+      };
+    }
 
     return {
       totalMatches,
       totalWins,
       totalWinrate,
-      recentMatches: recentMatches.length,
+      recentMatches: recentMatchCount,
       recentWins,
       recentWinrate,
       last5Matches,
-      recentMatchHistory: recentMatches,
+      recentMatchHistory,
+      currentHeroStats,
+      currentStreak: this.calculateStreak(sortedHistory),
+      currentHeroStreak:
+        currentHeroId !== undefined && heroMatches > 0
+          ? this.calculateHeroStreak(sortedHistory, currentHeroId)
+          : null,
     };
+  }
+
+  /**
+   * Calculate current win/loss streak from match history
+   * @param sortedHistory - Match history sorted by start_time descending (most recent first)
+   * @returns Positive number for win streak, negative for loss streak
+   */
+  private static calculateStreak(sortedHistory: MatchHistoryItem[]): number {
+    if (sortedHistory.length === 0) return 0;
+
+    const lastMatch = sortedHistory[0];
+    const lastResult = lastMatch.match_result === lastMatch.player_team;
+
+    let streak = 0;
+    for (const match of sortedHistory) {
+      const isWin = match.match_result === match.player_team;
+      if (isWin === lastResult) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return lastResult ? streak : -streak;
+  }
+
+  /**
+   * Calculate current win/loss streak on specific hero
+   * @param sortedHistory - Match history sorted by start_time descending (most recent first)
+   * @param heroId - Hero ID to filter matches
+   * @returns Positive number for win streak, negative for loss streak, null if no matches
+   */
+  private static calculateHeroStreak(
+    sortedHistory: MatchHistoryItem[],
+    heroId: number
+  ): number | null {
+    const heroMatches = sortedHistory.filter((m) => m.hero_id === heroId);
+    if (heroMatches.length === 0) return null;
+
+    const lastMatch = heroMatches[0];
+    const lastResult = lastMatch.match_result === lastMatch.player_team;
+
+    let streak = 0;
+    for (const match of heroMatches) {
+      const isWin = match.match_result === match.player_team;
+      if (isWin === lastResult) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return lastResult ? streak : -streak;
   }
 
   /**

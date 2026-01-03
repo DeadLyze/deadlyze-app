@@ -50,6 +50,18 @@ export const MATCH_TABLE_COLUMNS: ColumnConfig[] = [
     flex: `0 0 ${COLUMN_WIDTH.TAGS}px`,
     align: "center",
   },
+  {
+    id: "current_hero",
+    label: "Current Hero",
+    flex: `0 0 ${COLUMN_WIDTH.CURRENT_HERO}px`,
+    align: "center",
+  },
+  {
+    id: "current_streak",
+    label: "Current Streak",
+    flex: `0 0 ${COLUMN_WIDTH.CURRENT_STREAK}px`,
+    align: "center",
+  },
 ];
 
 // Search button configuration

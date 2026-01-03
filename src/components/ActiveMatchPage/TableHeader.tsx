@@ -7,9 +7,20 @@ export const TableHeader: React.FC = () => {
   const { t } = useTranslation();
 
   const renderColumnHeader = (columnId: string) => {
-    if (columnId === "matches" || columnId === "relation") {
+    if (
+      columnId === "matches" ||
+      columnId === "relation" ||
+      columnId === "current_hero" ||
+      columnId === "current_streak"
+    ) {
       const subtitleKey =
-        columnId === "matches" ? "matchesSubtitle" : "relationSubtitle";
+        columnId === "matches"
+          ? "matchesSubtitle"
+          : columnId === "relation"
+          ? "relationSubtitle"
+          : columnId === "current_hero"
+          ? "current_heroSubtitle"
+          : "current_streakSubtitle";
       return (
         <div className="flex flex-col items-center justify-center leading-none gap-[2px]">
           <div className="text-xs font-medium uppercase tracking-wide">

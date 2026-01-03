@@ -123,11 +123,12 @@ function ActiveMatchPage() {
       // Load match statistics for all players
       const statsMap = new Map<number, MatchStats>();
       await Promise.all(
-        accountIds.map(async (accountId) => {
+        allPlayers.map(async (player) => {
           const stats = await PlayerDataService.fetchPlayerMatchStats(
-            accountId
+            player.account_id,
+            player.hero_id
           );
-          statsMap.set(accountId, stats);
+          statsMap.set(player.account_id, stats);
         })
       );
       setMatchStatsMap(statsMap);

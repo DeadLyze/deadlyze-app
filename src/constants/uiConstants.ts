@@ -8,9 +8,11 @@ export const COLUMN_WIDTH = {
   RANK: 75,
   PLAYER: 150,
   MATCHES: 120,
+  CURRENT_HERO: 120,
   RECENT_MATCHES: 250,
   RELATION: 110,
   TAGS: 55,
+  CURRENT_STREAK: 120,
 } as const;
 
 // Table styling
@@ -30,9 +32,9 @@ export const COLORS = {
 
 // Match result colors (for recent matches indicator)
 export const MATCH_RESULT_COLORS = {
-  WIN_BAR: "rgba(45, 200, 100, 0.9)",
+  WIN_BAR: "rgba(39, 201, 133, 0.9)",
   WIN_GLOW: "rgba(45, 200, 100, 0.4)",
-  LOSS_BAR: "rgba(200, 60, 60, 0.9)",
+  LOSS_BAR: "rgba(228, 69, 69, 0.9)",
   LOSS_GLOW: "rgba(200, 60, 60, 0.4)",
 } as const;
 
