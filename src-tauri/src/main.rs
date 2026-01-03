@@ -378,6 +378,26 @@ fn main() {
                         let _ = set_window_opacity(app.clone(), 0.0);
                         let _ = window.set_ignore_cursor_events(true);
                         *is_hidden = true;
+                        
+                        // Try to focus Deadlock game
+                        #[cfg(target_os = "windows")]
+                        {
+                            use windows::Win32::UI::WindowsAndMessaging::{
+                                FindWindowW, SetForegroundWindow,
+                            };
+                            use windows::core::PCWSTR;
+                            
+                            std::thread::spawn(|| {
+                                unsafe {
+                                    let window_name: Vec<u16> = "Deadlock\0".encode_utf16().collect();
+                                    if let Ok(hwnd) = FindWindowW(PCWSTR::null(), PCWSTR(window_name.as_ptr())) {
+                                        if !hwnd.0.is_null() {
+                                            let _ = SetForegroundWindow(hwnd);
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     }
                 }
             })

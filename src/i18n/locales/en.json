@@ -51,6 +51,22 @@
       "healing": "Healing",
       "loading": "Loading...",
       "noData": "Failed to load match data"
+    },
+    "history": {
+      "button": "Match History",
+      "title": "MATCH HISTORY",
+      "clearAll": "Clear All",
+      "justNow": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "minutesAgo_plural": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "hoursAgo_plural": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago",
+      "daysAgo_plural": "{{count}}d ago"
+    },
+    "rateLimit": {
+      "available": "Available searches",
+      "limit": "10 per 30 minutes"
     }
   },
   "settings": {

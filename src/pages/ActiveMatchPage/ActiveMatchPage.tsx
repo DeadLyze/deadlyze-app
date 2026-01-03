@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { IoMdExit } from "react-icons/io";
 import { FaRegQuestionCircle } from "react-icons/fa";
 import MatchSearchInput from "../../components/ActiveMatchPage/MatchSearchInput/MatchSearchInput";
+import MatchHistoryPanel from "../../components/ActiveMatchPage/MatchHistoryPanel/MatchHistoryPanel";
+import RateLimitIndicator from "../../components/ActiveMatchPage/RateLimitIndicator/RateLimitIndicator";
 import { TeamTable } from "../../components/ActiveMatchPage/TeamTable";
 import { TableHeader } from "../../components/ActiveMatchPage/TableHeader";
 import {
@@ -22,6 +24,7 @@ import {
   PartyGroup,
   CacheService,
   MatchCacheService,
+  MatchHistoryService,
 } from "../../services";
 import { ASSET_RETRY_DELAY_MS } from "../../constants/uiConstants";
 
@@ -398,13 +401,50 @@ function ActiveMatchPage() {
       setMatchStatsMap(cachedMatch.matchStatsMap);
       setRelationStatsMap(cachedMatch.relationStatsMap);
       setPartyGroups(cachedMatch.partyGroups);
+      MatchHistoryService.addToHistory(matchId);
+      return;
+    }
+
+    if (!MatchHistoryService.canMakeRequest(matchId)) {
+      setError(true);
+      return;
+    }
+
+    const consumed = MatchHistoryService.consumeRequest(matchId);
+    if (!consumed) {
+      setError(true);
       return;
     }
 
     try {
       const data = await MatchService.fetchMatchData(matchId);
-      setMatchData(data);
+      const dataWithId = {
+        ...data,
+        match_id: parseInt(matchId),
+      };
+      setMatchData(dataWithId);
+      MatchHistoryService.addToHistory(matchId);
     } catch (err) {
+      setError(true);
+    }
+  };
+
+  const handleSelectFromHistory = (matchId: string) => {
+    setError(false);
+
+    const cachedMatch = MatchCacheService.getCachedMatch(matchId);
+    if (cachedMatch) {
+      const matchDataWithId = {
+        ...cachedMatch.matchData,
+        match_id: parseInt(matchId),
+      };
+      setMatchData(matchDataWithId);
+      setHeroIconUrls(cachedMatch.heroIconUrls);
+      setRankImageUrls(cachedMatch.rankImageUrls);
+      setMatchStatsMap(cachedMatch.matchStatsMap);
+      setRelationStatsMap(cachedMatch.relationStatsMap);
+      setPartyGroups(cachedMatch.partyGroups);
+    } else {
       setError(true);
     }
   };
@@ -463,6 +503,18 @@ function ActiveMatchPage() {
                 {t("activeMatch.searchForm.error")}
               </div>
             )}
+            {/* Bottom right corner: History and Rate Limit */}
+            <div
+              className="absolute flex flex-col items-end gap-3"
+              style={{
+                bottom: "24px",
+                right: "24px",
+                zIndex: 100,
+              }}
+            >
+              <MatchHistoryPanel onSelectMatch={handleSelectFromHistory} />
+              <RateLimitIndicator />
+            </div>
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">

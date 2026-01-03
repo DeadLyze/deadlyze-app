@@ -9,6 +9,7 @@ export interface MatchPlayer {
 }
 
 export interface MatchData {
+  match_id?: number;
   amber_team: MatchPlayer[];
   sapphire_team: MatchPlayer[];
 }

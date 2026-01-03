@@ -51,6 +51,22 @@
       "healing": "Лечение",
       "loading": "Загрузка...",
       "noData": "Не удалось загрузить данные матча"
+    },
+    "history": {
+      "button": "История матчей",
+      "title": "ИСТОРИЯ МАТЧЕЙ",
+      "clearAll": "Очистить всё",
+      "justNow": "Только что",
+      "minutesAgo": "{{count}} мин назад",
+      "minutesAgo_plural": "{{count}} мин назад",
+      "hoursAgo": "{{count}} ч назад",
+      "hoursAgo_plural": "{{count}} ч назад",
+      "daysAgo": "{{count}} д назад",
+      "daysAgo_plural": "{{count}} д назад"
+    },
+    "rateLimit": {
+      "available": "Доступно поисков",
+      "limit": "10 штук за 30 минут"
     }
   },
   "settings": {

@@ -5,6 +5,7 @@ export { AssetsService } from "./AssetsService";
 export { PlayerDataService } from "./PlayerDataService";
 export { PartyService } from "./PartyService";
 export { MatchCacheService } from "./MatchCacheService";
+export { MatchHistoryService } from "./MatchHistoryService";
 export type { SteamData, UserData, AppCache } from "./CacheService";
 export type { SteamInfo } from "./SteamService";
 export type { MatchData, MatchPlayer } from "./MatchService";
@@ -23,3 +24,4 @@ export type {
   DetailedMatchMetadata,
 } from "./PlayerDataService";
 export type { PartyGroup } from "./PartyService";
+export type { MatchHistoryEntry } from "./MatchHistoryService";

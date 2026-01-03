@@ -1,6 +1,7 @@
-import { useState, useRef, KeyboardEvent } from "react";
+import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { SEARCH_BUTTON_CONFIG } from "../tableConfig";
+import { MatchHistoryService } from "../../../services/MatchHistoryService";
 
 interface MatchSearchInputProps {
   onSearch: (matchId: string) => void;
@@ -12,6 +13,25 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [isOnCooldown, setIsOnCooldown] = useState(false);
+  const [availableRequests, setAvailableRequests] = useState(
+    MatchHistoryService.getAvailableRequests()
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAvailableRequests(MatchHistoryService.getAvailableRequests());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const canSubmit = () => {
+    const matchId = digits.join("");
+    if (matchId.length !== 8) return false;
+    if (isOnCooldown) return false;
+
+    return MatchHistoryService.canMakeRequest(matchId);
+  };
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -32,7 +52,7 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
     if (e.key === "Backspace" && !digits[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
-    if (e.key === "Enter" && digits.every((d) => d !== "") && !isOnCooldown) {
+    if (e.key === "Enter" && canSubmit()) {
       triggerButtonAnimation();
       handleSubmit();
     }
@@ -96,14 +116,13 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
   };
 
   const handleSubmit = () => {
-    if (isOnCooldown) return;
+    if (!canSubmit()) return;
 
     const matchId = digits.join("");
     if (matchId.length === 8) {
       setIsOnCooldown(true);
       onSearch(matchId);
 
-      // Reset cooldown after duration
       setTimeout(() => {
         setIsOnCooldown(false);
       }, SEARCH_BUTTON_CONFIG.COOLDOWN_DURATION);
@@ -199,7 +218,7 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
         <button
           ref={buttonRef}
           onClick={handleSubmit}
-          disabled={digits.some((d) => d === "") || isOnCooldown}
+          disabled={!canSubmit()}
           className="flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             width: "300px",
@@ -208,10 +227,7 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
             background: "#10262F",
             backgroundImage:
               "linear-gradient(135deg, rgba(50, 194, 132, 0.26) 15%, rgba(40, 27, 101, 0) 85%)",
-            cursor:
-              digits.some((d) => d === "") || isOnCooldown
-                ? "not-allowed"
-                : "pointer",
+            cursor: !canSubmit() ? "not-allowed" : "pointer",
             boxShadow:
               "inset 4px 4px 7px rgba(255, 255, 255, 0.06), inset -4px -4px 7px rgba(0, 0, 0, 0.25)",
             filter:
@@ -222,7 +238,7 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
             alignItems: "center",
           }}
           onMouseDown={(e) => {
-            if (!digits.some((d) => d === "") && !isOnCooldown) {
+            if (canSubmit()) {
               e.currentTarget.style.boxShadow =
                 "inset 4px 4px 9px rgba(0, 0, 0, 0.5), inset -4px -4px 10px rgba(0, 0, 0, 0.6)";
               e.currentTarget.style.filter = "none";
