@@ -1,12 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { FaAnchor, FaMask, FaArrowRotateRight } from "react-icons/fa6";
+import { GiSkullCrossedBones } from "react-icons/gi";
 import { MatchTable, TableRow, TableColumn } from "./MatchTable";
 import { MatchPlayer } from "../../services/MatchService";
 import {
   MatchStats,
   PlayerRelationStats,
+  PlayerTag,
+  PlayerDataService,
 } from "../../services/PlayerDataService";
 import { MATCH_TABLE_COLUMNS } from "./tableConfig";
 import { CacheService } from "../../services/CacheService";
+import {
+  PLAYER_TAG_COLORS,
+  PLAYER_TAG_THRESHOLDS,
+} from "../../constants/playerTagConstants";
 
 interface TeamTableProps {
   players: MatchPlayer[];
@@ -23,6 +32,35 @@ export const TeamTable: React.FC<TeamTableProps> = ({
   matchStatsMap,
   relationStatsMap,
 }) => {
+  const { t } = useTranslation();
+  const [playerTagsMap, setPlayerTagsMap] = useState<Map<number, PlayerTag[]>>(
+    new Map()
+  );
+
+  useEffect(() => {
+    const loadPlayerTags = async () => {
+      if (!matchStatsMap) return;
+
+      const tagsMap = new Map<number, PlayerTag[]>();
+
+      for (const player of players) {
+        const matchStats = matchStatsMap.get(player.account_id);
+        if (matchStats) {
+          const tags = await PlayerDataService.determinePlayerTags(
+            matchStats,
+            player.hero_id,
+            player.account_id
+          );
+          tagsMap.set(player.account_id, tags);
+        }
+      }
+
+      setPlayerTagsMap(tagsMap);
+    };
+
+    loadPlayerTags();
+  }, [players, matchStatsMap]);
+
   const renderColumnContent = (columnId: string, player: MatchPlayer) => {
     switch (columnId) {
       case "hero":
@@ -87,9 +125,9 @@ export const TeamTable: React.FC<TeamTableProps> = ({
           </div>
         );
 
-      case "recent_matches":
-        const matchStats = matchStatsMap?.get(player.account_id);
-        const recentMatches = matchStats?.last5Matches || [];
+      case "recent_matches": {
+        const recentMatchStats = matchStatsMap?.get(player.account_id);
+        const recentMatches = recentMatchStats?.last5Matches || [];
         return (
           <div className="flex w-full h-full gap-0">
             {recentMatches.map((match, idx) => {
@@ -143,8 +181,9 @@ export const TeamTable: React.FC<TeamTableProps> = ({
             ))}
           </div>
         );
+      }
 
-      case "relation":
+      case "relation": {
         const currentUser = CacheService.getCurrentUser();
         const relationStats = relationStatsMap?.get(player.account_id);
 
@@ -207,6 +246,108 @@ export const TeamTable: React.FC<TeamTableProps> = ({
             </div>
           </div>
         );
+      }
+
+      case "tags": {
+        const tags = playerTagsMap.get(player.account_id);
+
+        if (!tags || tags.length === 0) {
+          return (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-[#e6ca9c]/40 text-xs">-</span>
+            </div>
+          );
+        }
+
+        const renderTagIcon = (tag: PlayerTag) => {
+          const iconStyle = { width: "23px", height: "23px" };
+          const color =
+            PLAYER_TAG_COLORS[
+              tag.type.toUpperCase() as keyof typeof PLAYER_TAG_COLORS
+            ];
+
+          const getTooltip = () => {
+            const tagName = t(`activeMatch.tags.${tag.type}`);
+
+            switch (tag.type) {
+              case "smurf":
+                return `${tagName}: ${t("activeMatch.tags.tooltips.smurf", {
+                  totalValue: tag.totalValue,
+                  recentValue: tag.recentValue,
+                  days: 14,
+                })}`;
+              case "loser":
+                return `${tagName}: ${t("activeMatch.tags.tooltips.loser", {
+                  recentValue: tag.recentValue,
+                  days: 14,
+                })}`;
+              case "spammer":
+                return `${tagName}: ${t("activeMatch.tags.tooltips.spammer", {
+                  value: tag.value,
+                  days: 14,
+                })}`;
+              case "cheater":
+                return `${tagName}: ${t("activeMatch.tags.tooltips.cheater", {
+                  value: tag.value,
+                  matches: PLAYER_TAG_THRESHOLDS.CHEATER_MATCHES_COUNT,
+                })}`;
+              default:
+                return "";
+            }
+          };
+
+          const iconElement = (() => {
+            switch (tag.type) {
+              case "smurf":
+                return <FaMask style={{ ...iconStyle, color }} />;
+              case "loser":
+                return <FaAnchor style={{ ...iconStyle, color }} />;
+              case "spammer":
+                return <FaArrowRotateRight style={{ ...iconStyle, color }} />;
+              case "cheater":
+                return <GiSkullCrossedBones style={{ ...iconStyle, color }} />;
+              default:
+                return null;
+            }
+          })();
+
+          return (
+            <div title={getTooltip()} className="cursor-default">
+              {iconElement}
+            </div>
+          );
+        };
+
+        const getLayoutClass = () => {
+          if (tags.length === 1) return "flex items-center justify-center";
+          if (tags.length === 2)
+            return "flex flex-row items-center justify-center gap-1";
+          if (tags.length === 3)
+            return "flex flex-col items-center justify-center gap-1";
+          return "grid grid-cols-2 gap-1";
+        };
+
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className={getLayoutClass()}>
+              {tags.length === 3 ? (
+                <>
+                  <div className="flex flex-row gap-1">
+                    {tags.slice(0, 2).map((tag, index) => (
+                      <div key={index}>{renderTagIcon(tag)}</div>
+                    ))}
+                  </div>
+                  <div>{renderTagIcon(tags[2])}</div>
+                </>
+              ) : (
+                tags.map((tag, index) => (
+                  <div key={index}>{renderTagIcon(tag)}</div>
+                ))
+              )}
+            </div>
+          </div>
+        );
+      }
 
       default:
         return null;
@@ -225,7 +366,8 @@ export const TeamTable: React.FC<TeamTableProps> = ({
               noPadding={
                 column.id === "hero" ||
                 column.id === "rank" ||
-                column.id === "recent_matches"
+                column.id === "recent_matches" ||
+                column.id === "tags"
               }
             >
               {renderColumnContent(column.id, player)}

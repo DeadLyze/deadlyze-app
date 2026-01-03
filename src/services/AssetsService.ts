@@ -20,6 +20,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface HeroImages {
   selection_image_webp?: string;
+  top_bar_image_webp?: string;
 }
 
 export interface Hero {
@@ -114,14 +115,16 @@ export class AssetsService {
 
   /**
    * Get hero icon URL (WebP format) by hero ID
-   * Returns selection_image_webp from hero images
+   * Returns top_bar_image_webp from hero images, falls back to selection_image_webp
    * @param heroId - Hero ID number
    * @returns Image URL or empty string if not found
    */
   static async getHeroIconUrl(heroId: number): Promise<string> {
     try {
       const hero = await this.fetchHeroById(heroId);
-      return hero.images.selection_image_webp || "";
+      return (
+        hero.images.top_bar_image_webp || hero.images.selection_image_webp || ""
+      );
     } catch (error) {
       return "";
     }

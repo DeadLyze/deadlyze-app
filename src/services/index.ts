@@ -14,4 +14,8 @@ export type {
   MateStats,
   EnemyStats,
   PlayerRelationStats,
+  PlayerTag,
+  MatchMetadata,
+  CustomUserStat,
+  PlayerMatchStats,
 } from "./PlayerDataService";

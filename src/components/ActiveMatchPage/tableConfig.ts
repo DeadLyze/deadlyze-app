@@ -44,6 +44,12 @@ export const MATCH_TABLE_COLUMNS: ColumnConfig[] = [
     flex: `0 0 ${COLUMN_WIDTH.RELATION}px`,
     align: "center",
   },
+  {
+    id: "tags",
+    label: "Tags",
+    flex: `0 0 ${COLUMN_WIDTH.TAGS}px`,
+    align: "center",
+  },
 ];
 
 // Search button configuration

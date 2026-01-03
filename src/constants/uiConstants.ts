@@ -10,6 +10,7 @@ export const COLUMN_WIDTH = {
   MATCHES: 120,
   RECENT_MATCHES: 250,
   RELATION: 110,
+  TAGS: 55,
 } as const;
 
 // Table styling

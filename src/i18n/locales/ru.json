@@ -18,7 +18,20 @@
         "matchesSubtitle": "всего | 14 дней",
         "recent_matches": "ПОСЛЕДНИЕ МАТЧИ",
         "relation": "МАТЧИ",
-        "relationSubtitle": "с | против"
+        "relationSubtitle": "вместе | против",
+        "tags": "МЕТКИ"
+      }
+    },
+    "tags": {
+      "smurf": "Смурф",
+      "loser": "Лузер",
+      "spammer": "Спамер",
+      "cheater": "Читер",
+      "tooltips": {
+        "smurf": "Винрейт {{totalValue}}%, за последние {{days}} дней {{recentValue}}%",
+        "loser": "Винрейт {{recentValue}}% за последние {{days}} дней",
+        "spammer": "{{value}}% выбора персонажа за последние {{days}} дней",
+        "cheater": "Средний хедшот {{value}}% за последние {{matches}} матчей"
       }
     }
   },

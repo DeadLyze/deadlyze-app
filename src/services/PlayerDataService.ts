@@ -6,7 +6,9 @@
 import {
   PLAYER_DATA_API_BASE_URL,
   TWO_WEEKS_IN_SECONDS,
+  MATCH_METADATA_DELAY_MS,
 } from "../constants/apiConstants";
+import { PLAYER_TAG_THRESHOLDS } from "../constants/playerTagConstants";
 
 const BASE_URL = PLAYER_DATA_API_BASE_URL;
 
@@ -25,6 +27,7 @@ export interface PlayerMMR {
 // === Match History Interfaces ===
 
 export interface MatchHistoryItem {
+  match_id: number;
   match_result: number;
   player_team: number;
   start_time: number;
@@ -39,6 +42,35 @@ export interface MatchStats {
   recentWins: number;
   recentWinrate: number;
   last5Matches: MatchHistoryItem[];
+}
+
+// === Match Metadata Interfaces ===
+
+export interface CustomUserStat {
+  id: number;
+  value: number;
+}
+
+export interface PlayerMatchStats {
+  account_id: number;
+  stats: Array<{
+    custom_user_stats?: CustomUserStat[];
+  }>;
+}
+
+export interface MatchMetadata {
+  match_info: {
+    players: PlayerMatchStats[];
+  };
+}
+
+// === Player Tag Interfaces ===
+
+export interface PlayerTag {
+  type: "smurf" | "loser" | "spammer" | "cheater";
+  value?: number; // Main value for tooltip
+  totalValue?: number; // Additional value for smurf (total winrate)
+  recentValue?: number; // Additional value for smurf/loser (recent winrate)
 }
 
 // === Player Relation Interfaces ===
@@ -378,5 +410,166 @@ export class PlayerDataService {
     } catch (error) {
       return new Map();
     }
+  }
+
+  /**
+   * Fetch match metadata for detailed stats
+   * @param matchId - Match ID to fetch metadata for
+   * @returns Match metadata or null if fetch fails
+   */
+  private static async fetchMatchMetadata(
+    matchId: number
+  ): Promise<MatchMetadata | null> {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/v1/matches/${matchId}/metadata?is_custom=false`
+      );
+
+      if (!response.ok) {
+        if (response.status === 400) {
+          return null;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Check if player is a cheater based on headshot rate analysis
+   * @param matchHistory - Array of last 5 matches with match_id and account_id
+   * @returns Average headshot percentage or null
+   */
+  private static async checkCheaterStatus(
+    matchHistory: MatchHistoryItem[],
+    accountId: number
+  ): Promise<number | null> {
+    try {
+      const { CHEATER_MATCHES_COUNT } = PLAYER_TAG_THRESHOLDS;
+
+      if (matchHistory.length < CHEATER_MATCHES_COUNT) {
+        return null;
+      }
+
+      const recentMatches = matchHistory.slice(0, CHEATER_MATCHES_COUNT);
+      let totalHeadshotRate = 0;
+      let validMatches = 0;
+
+      for (const match of recentMatches) {
+        const metadata = await this.fetchMatchMetadata(match.match_id);
+
+        if (metadata?.match_info?.players) {
+          const player = metadata.match_info.players.find(
+            (p) => p.account_id === accountId
+          );
+
+          if (player?.stats && player.stats.length > 0) {
+            const lastStats = player.stats[player.stats.length - 1];
+
+            if (lastStats.custom_user_stats) {
+              const headshotStat = lastStats.custom_user_stats.find(
+                (stat) => stat.id === 13
+              );
+
+              if (headshotStat && headshotStat.value !== undefined) {
+                totalHeadshotRate += headshotStat.value;
+                validMatches++;
+              }
+            }
+          }
+        }
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, MATCH_METADATA_DELAY_MS)
+        );
+      }
+
+      if (validMatches >= 3) {
+        return totalHeadshotRate / validMatches;
+      }
+
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Determine player tags based on match statistics
+   * @param matchStats - Player's match statistics
+   * @param currentHeroId - Hero ID the player is currently using
+   * @returns Array of player tags
+   */
+  static async determinePlayerTags(
+    matchStats: MatchStats,
+    currentHeroId: number,
+    accountId: number
+  ): Promise<PlayerTag[]> {
+    const tags: PlayerTag[] = [];
+
+    if (!matchStats || matchStats.totalMatches === 0) {
+      return tags;
+    }
+
+    const {
+      SMURF_WINRATE,
+      LOSER_WINRATE,
+      SPAMMER_HERO_RATE,
+      LOSER_MIN_MATCHES,
+    } = PLAYER_TAG_THRESHOLDS;
+
+    // Check for smurf: high winrate both all-time and last 14 days
+    if (
+      matchStats.totalWinrate >= SMURF_WINRATE &&
+      matchStats.recentWinrate >= SMURF_WINRATE
+    ) {
+      tags.push({
+        type: "smurf",
+        totalValue: matchStats.totalWinrate,
+        recentValue: matchStats.recentWinrate,
+      });
+    }
+
+    // Check for loser: low winrate in last 14 days with minimum matches
+    if (
+      matchStats.recentMatches >= LOSER_MIN_MATCHES &&
+      matchStats.recentWinrate <= LOSER_WINRATE
+    ) {
+      tags.push({ type: "loser", recentValue: matchStats.recentWinrate });
+    }
+
+    // Check for spammer: frequently plays current hero in last 14 days
+    if (currentHeroId && matchStats.last5Matches.length > 0) {
+      const heroMatches = matchStats.last5Matches.filter(
+        (match) => match.hero_id === currentHeroId
+      ).length;
+      const heroRate = (heroMatches / matchStats.last5Matches.length) * 100;
+
+      if (heroRate >= SPAMMER_HERO_RATE) {
+        tags.push({ type: "spammer", value: Math.round(heroRate) });
+      }
+    }
+
+    // Check for cheater: high headshot rate in last 5 matches
+    if (
+      matchStats.last5Matches.length >=
+      PLAYER_TAG_THRESHOLDS.CHEATER_MATCHES_COUNT
+    ) {
+      const headshotRate = await this.checkCheaterStatus(
+        matchStats.last5Matches,
+        accountId
+      );
+      if (
+        headshotRate !== null &&
+        headshotRate >= PLAYER_TAG_THRESHOLDS.CHEATER_HEADSHOT_RATE
+      ) {
+        tags.push({ type: "cheater", value: Math.round(headshotRate) });
+      }
+    }
+
+    return tags;
   }
 }

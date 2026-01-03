@@ -65,8 +65,10 @@ function ActiveMatchPage() {
 
       heroIds.forEach((heroId) => {
         const hero = heroMap.get(heroId);
-        if (hero?.images.selection_image_webp) {
-          heroUrls.set(heroId, hero.images.selection_image_webp);
+        const imageUrl =
+          hero?.images.top_bar_image_webp || hero?.images.selection_image_webp;
+        if (imageUrl) {
+          heroUrls.set(heroId, imageUrl);
         } else {
           failedHeroes.push(heroId);
         }
@@ -131,8 +133,11 @@ function ActiveMatchPage() {
         );
         missingHeroIds.forEach((heroId) => {
           const hero = additionalHeroMap.get(heroId);
-          if (hero?.images.selection_image_webp) {
-            heroUrls.set(heroId, hero.images.selection_image_webp);
+          const imageUrl =
+            hero?.images.top_bar_image_webp ||
+            hero?.images.selection_image_webp;
+          if (imageUrl) {
+            heroUrls.set(heroId, imageUrl);
           }
         });
         setHeroIconUrls(new Map(heroUrls));
@@ -170,8 +175,11 @@ function ActiveMatchPage() {
 
         failedHeroes.forEach((heroId) => {
           const hero = retryHeroMap.get(heroId);
-          if (hero?.images.selection_image_webp) {
-            newHeroUrls.set(heroId, hero.images.selection_image_webp);
+          const imageUrl =
+            hero?.images.top_bar_image_webp ||
+            hero?.images.selection_image_webp;
+          if (imageUrl) {
+            newHeroUrls.set(heroId, imageUrl);
           }
         });
 

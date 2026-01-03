@@ -18,7 +18,20 @@
         "matchesSubtitle": "all time | 14 days",
         "recent_matches": "RECENT MATCHES",
         "relation": "MATCHES",
-        "relationSubtitle": "with | against"
+        "relationSubtitle": "with | against",
+        "tags": "TAGS"
+      }
+    },
+    "tags": {
+      "smurf": "Smurf",
+      "loser": "Loser",
+      "spammer": "Spammer",
+      "cheater": "Cheater",
+      "tooltips": {
+        "smurf": "Winrate {{totalValue}}%, last {{days}} days {{recentValue}}%",
+        "loser": "Winrate {{recentValue}}% last {{days}} days",
+        "spammer": "{{value}}% hero pick rate last {{days}} days",
+        "cheater": "Avg headshot {{value}}% last {{matches}} matches"
       }
     }
   },
