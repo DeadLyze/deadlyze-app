@@ -4,7 +4,7 @@ import { MatchHistoryService } from "../../../services/MatchHistoryService";
 
 const RATE_LIMIT_CONFIG = {
   MAX_REQUESTS: 10,
-  RESTORE_INTERVAL_MS: 3 * 60 * 1000 + 3000, // 3 minutes + 3 seconds
+  RESTORE_INTERVAL_MS: 3 * 60 * 1000, // 3 minutes
 } as const;
 
 interface RateLimitIndicatorProps {

@@ -13,7 +13,7 @@ const SESSION_STORAGE_KEY = "deadlyze_attempted_matches";
 const RATE_LIMIT_CONFIG = {
   MAX_REQUESTS: 10,
   WINDOW_MS: 30 * 60 * 1000, // 30 minutes
-  RESTORE_INTERVAL_MS: 3 * 60 * 1000 + 3000, // 3 minutes + 3 seconds safety buffer
+  RESTORE_INTERVAL_MS: 3 * 60 * 1000, // 3 minutes per request
 } as const;
 
 export interface MatchHistoryEntry {
@@ -23,6 +23,7 @@ export interface MatchHistoryEntry {
 
 interface RateLimitState {
   availableRequests: number;
+  lastRequestTime: number;
   timestamps: number[];
 }
 
@@ -30,6 +31,7 @@ class MatchHistoryServiceClass {
   private history: MatchHistoryEntry[] = [];
   private rateLimitState: RateLimitState = {
     availableRequests: RATE_LIMIT_CONFIG.MAX_REQUESTS,
+    lastRequestTime: Date.now(),
     timestamps: [],
   };
   private restoreInterval: number | null = null;
@@ -38,6 +40,7 @@ class MatchHistoryServiceClass {
   constructor() {
     this.loadFromStorage();
     this.loadAttemptedMatches();
+    this.recalculateAvailableRequests();
     this.startRestoreInterval();
   }
 
@@ -75,7 +78,8 @@ class MatchHistoryServiceClass {
         const saved = JSON.parse(rateLimitData);
         this.rateLimitState = {
           availableRequests:
-            saved.availableRequests || RATE_LIMIT_CONFIG.MAX_REQUESTS,
+            saved.availableRequests ?? RATE_LIMIT_CONFIG.MAX_REQUESTS,
+          lastRequestTime: saved.lastRequestTime ?? Date.now(),
           timestamps: saved.timestamps || [],
         };
         this.cleanupOldTimestamps();
@@ -105,17 +109,28 @@ class MatchHistoryServiceClass {
     );
   }
 
+  private recalculateAvailableRequests(): void {
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.rateLimitState.lastRequestTime;
+    const intervalsElapsed = Math.floor(
+      timeSinceLastRequest / RATE_LIMIT_CONFIG.RESTORE_INTERVAL_MS
+    );
+
+    if (intervalsElapsed > 0) {
+      this.rateLimitState.availableRequests = Math.min(
+        this.rateLimitState.availableRequests + intervalsElapsed,
+        RATE_LIMIT_CONFIG.MAX_REQUESTS
+      );
+      this.rateLimitState.lastRequestTime =
+        this.rateLimitState.lastRequestTime +
+        intervalsElapsed * RATE_LIMIT_CONFIG.RESTORE_INTERVAL_MS;
+      this.saveToStorage();
+    }
+  }
+
   private startRestoreInterval(): void {
     this.restoreInterval = setInterval(() => {
-      if (
-        this.rateLimitState.availableRequests < RATE_LIMIT_CONFIG.MAX_REQUESTS
-      ) {
-        this.rateLimitState.availableRequests = Math.min(
-          this.rateLimitState.availableRequests + 1,
-          RATE_LIMIT_CONFIG.MAX_REQUESTS
-        );
-        this.saveToStorage();
-      }
+      this.recalculateAvailableRequests();
     }, RATE_LIMIT_CONFIG.RESTORE_INTERVAL_MS);
   }
 
@@ -167,11 +182,14 @@ class MatchHistoryServiceClass {
       return true;
     }
 
+    this.recalculateAvailableRequests();
+
     if (this.rateLimitState.availableRequests <= 0) {
       return false;
     }
 
     this.rateLimitState.availableRequests -= 1;
+    this.rateLimitState.lastRequestTime = Date.now();
     this.rateLimitState.timestamps.push(Date.now());
     this.attemptedMatches.add(matchId);
     this.saveToStorage();
@@ -180,6 +198,7 @@ class MatchHistoryServiceClass {
   }
 
   getAvailableRequests(): number {
+    this.recalculateAvailableRequests();
     this.cleanupOldTimestamps();
     return this.rateLimitState.availableRequests;
   }
