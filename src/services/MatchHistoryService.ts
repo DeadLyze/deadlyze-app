@@ -13,7 +13,7 @@ const SESSION_STORAGE_KEY = "deadlyze_attempted_matches";
 const RATE_LIMIT_CONFIG = {
   MAX_REQUESTS: 10,
   WINDOW_MS: 30 * 60 * 1000, // 30 minutes
-  RESTORE_INTERVAL_MS: 3 * 60 * 1000, // 3 minutes per request
+  RESTORE_INTERVAL_MS: (3 * 60 + 3) * 1000, // 3 minutes 3 seconds per request
 } as const;
 
 export interface MatchHistoryEntry {
@@ -68,7 +68,7 @@ class MatchHistoryServiceClass {
 
   private loadFromStorage(): void {
     try {
-      const historyData = localStorage.getItem(STORAGE_KEYS.HISTORY);
+      const historyData = sessionStorage.getItem(STORAGE_KEYS.HISTORY);
       if (historyData) {
         this.history = JSON.parse(historyData);
       }
@@ -91,7 +91,10 @@ class MatchHistoryServiceClass {
 
   private saveToStorage(): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(this.history));
+      sessionStorage.setItem(
+        STORAGE_KEYS.HISTORY,
+        JSON.stringify(this.history)
+      );
       localStorage.setItem(
         STORAGE_KEYS.RATE_LIMIT,
         JSON.stringify(this.rateLimitState)

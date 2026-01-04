@@ -5,9 +5,13 @@ import { MatchHistoryService } from "../../../services/MatchHistoryService";
 
 interface MatchSearchInputProps {
   onSearch: (matchId: string) => void;
+  isSearching?: boolean;
 }
 
-function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
+function MatchSearchInput({
+  onSearch,
+  isSearching = false,
+}: MatchSearchInputProps) {
   const { t } = useTranslation();
   const [digits, setDigits] = useState<string[]>(Array(8).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -28,7 +32,7 @@ function MatchSearchInput({ onSearch }: MatchSearchInputProps) {
   const canSubmit = () => {
     const matchId = digits.join("");
     if (matchId.length !== 8) return false;
-    if (isOnCooldown) return false;
+    if (isOnCooldown || isSearching) return false;
 
     return MatchHistoryService.canMakeRequest(matchId);
   };

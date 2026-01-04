@@ -37,6 +37,7 @@ interface TeamTableProps {
   matchStatsMap?: Map<number, MatchStats>;
   relationStatsMap?: Map<number, PlayerRelationStats>;
   partyGroups?: PartyGroup[];
+  playerTagsMap?: Map<number, PlayerTag[]>;
   isTopTable?: boolean;
 }
 
@@ -47,38 +48,12 @@ export const TeamTable: React.FC<TeamTableProps> = ({
   matchStatsMap,
   relationStatsMap,
   partyGroups = [],
+  playerTagsMap = new Map(),
   isTopTable = false,
 }) => {
   const { t } = useTranslation();
-  const [playerTagsMap, setPlayerTagsMap] = useState<Map<number, PlayerTag[]>>(
-    new Map()
-  );
   const matchIconRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const { showCard, hideCard } = useMatchCard();
-
-  useEffect(() => {
-    const loadPlayerTags = async () => {
-      if (!matchStatsMap) return;
-
-      const tagsMap = new Map<number, PlayerTag[]>();
-
-      for (const player of players) {
-        const matchStats = matchStatsMap.get(player.account_id);
-        if (matchStats) {
-          const tags = await PlayerDataService.determinePlayerTags(
-            matchStats,
-            player.hero_id,
-            player.account_id
-          );
-          tagsMap.set(player.account_id, tags);
-        }
-      }
-
-      setPlayerTagsMap(tagsMap);
-    };
-
-    loadPlayerTags();
-  }, [players, matchStatsMap]);
 
   const renderPlayerTag = (tag: PlayerTag): React.ReactNode => {
     const iconStyle = { width: TAG_ICON_SIZE, height: TAG_ICON_SIZE };

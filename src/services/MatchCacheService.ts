@@ -3,6 +3,7 @@ import {
   MatchStats,
   PlayerRelationStats,
   DetailedMatchMetadata,
+  PlayerTag,
 } from "./";
 import { PartyGroup } from "./PartyService";
 
@@ -18,6 +19,7 @@ interface CachedMatchData {
   matchStatsMap: Map<number, MatchStats>;
   relationStatsMap: Map<number, PlayerRelationStats>;
   partyGroups: PartyGroup[];
+  playerTagsMap: Map<number, PlayerTag[]>;
   timestamp: number;
 }
 

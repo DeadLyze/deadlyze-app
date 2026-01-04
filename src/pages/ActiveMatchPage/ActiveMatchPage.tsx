@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { IoMdExit } from "react-icons/io";
 import { FaRegQuestionCircle } from "react-icons/fa";
@@ -21,6 +21,7 @@ import {
   Rank,
   MatchStats,
   PlayerRelationStats,
+  PlayerTag,
   PartyGroup,
   CacheService,
   MatchCacheService,
@@ -32,6 +33,7 @@ function ActiveMatchPage() {
   const { t } = useTranslation();
   const [matchData, setMatchData] = useState<MatchData | null>(null);
   const [error, setError] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
   const [heroIconUrls, setHeroIconUrls] = useState<Map<number, string>>(
     new Map()
   );
@@ -47,6 +49,10 @@ function ActiveMatchPage() {
   const [partyGroups, setPartyGroups] = useState<PartyGroup[]>([]);
   const [ranks, setRanks] = useState<Rank[]>([]);
   const [isDataFullyLoaded, setIsDataFullyLoaded] = useState<boolean>(false);
+  const [playerTagsMap, setPlayerTagsMap] = useState<Map<number, PlayerTag[]>>(
+    new Map()
+  );
+  const isLoadedFromCacheRef = useRef<boolean>(false);
 
   // Load ranks once on mount
   // Note: In development mode with React StrictMode, this effect will run twice
@@ -67,6 +73,12 @@ function ActiveMatchPage() {
   // This prevents partial data from being cached if user exits early
   useEffect(() => {
     if (!matchData) return;
+
+    // Skip loading if data was already loaded from cache
+    if (isLoadedFromCacheRef.current) {
+      isLoadedFromCacheRef.current = false;
+      return;
+    }
 
     let isCancelled = false;
     setIsDataFullyLoaded(false);
@@ -182,14 +194,33 @@ function ActiveMatchPage() {
 
       // Load player relation stats if current user is available
       const currentUser = CacheService.getCurrentUser();
+      let loadedRelationStats = new Map<number, PlayerRelationStats>();
       if (currentUser.accountId) {
         const relationStats =
           await PlayerDataService.fetchPlayerRelationStatsMap(
             currentUser.accountId,
             accountIds
           );
+        loadedRelationStats = relationStats;
         setRelationStatsMap(relationStats);
       }
+
+      // Load player tags for all players
+      const tagsMap = new Map<number, PlayerTag[]>();
+      await Promise.all(
+        allPlayers.map(async (player) => {
+          const matchStats = statsMap.get(player.account_id);
+          if (matchStats) {
+            const tags = await PlayerDataService.determinePlayerTags(
+              matchStats,
+              player.hero_id,
+              player.account_id
+            );
+            tagsMap.set(player.account_id, tags);
+          }
+        })
+      );
+      setPlayerTagsMap(tagsMap);
 
       // Wait for party groups to finish loading
       await partyGroupsPromise;
@@ -201,8 +232,9 @@ function ActiveMatchPage() {
           heroIconUrls: heroUrls,
           rankImageUrls: rankUrls,
           matchStatsMap: statsMap,
-          relationStatsMap,
+          relationStatsMap: loadedRelationStats,
           partyGroups: loadedPartyGroups,
+          playerTagsMap: tagsMap,
         });
         setIsDataFullyLoaded(true);
       }
@@ -390,29 +422,36 @@ function ActiveMatchPage() {
       isCancelled = true;
     };
   }, [matchData, ranks]);
+
   const handleSearch = async (matchId: string) => {
     setError(false);
+    setIsSearching(true);
 
     const cachedMatch = MatchCacheService.getCachedMatch(matchId);
     if (cachedMatch) {
+      isLoadedFromCacheRef.current = true;
       setMatchData(cachedMatch.matchData);
       setHeroIconUrls(cachedMatch.heroIconUrls);
       setRankImageUrls(cachedMatch.rankImageUrls);
       setMatchStatsMap(cachedMatch.matchStatsMap);
       setRelationStatsMap(cachedMatch.relationStatsMap);
       setPartyGroups(cachedMatch.partyGroups);
+      setPlayerTagsMap(cachedMatch.playerTagsMap);
       MatchHistoryService.addToHistory(matchId);
+      setIsSearching(false);
       return;
     }
 
     if (!MatchHistoryService.canMakeRequest(matchId)) {
       setError(true);
+      setIsSearching(false);
       return;
     }
 
     const consumed = MatchHistoryService.consumeRequest(matchId);
     if (!consumed) {
       setError(true);
+      setIsSearching(false);
       return;
     }
 
@@ -426,14 +465,17 @@ function ActiveMatchPage() {
       MatchHistoryService.addToHistory(matchId);
     } catch (err) {
       setError(true);
+    } finally {
+      setIsSearching(false);
     }
   };
 
-  const handleSelectFromHistory = (matchId: string) => {
+  const handleSelectFromHistory = async (matchId: string) => {
     setError(false);
 
     const cachedMatch = MatchCacheService.getCachedMatch(matchId);
     if (cachedMatch) {
+      isLoadedFromCacheRef.current = true;
       const matchDataWithId = {
         ...cachedMatch.matchData,
         match_id: parseInt(matchId),
@@ -444,13 +486,42 @@ function ActiveMatchPage() {
       setMatchStatsMap(cachedMatch.matchStatsMap);
       setRelationStatsMap(cachedMatch.relationStatsMap);
       setPartyGroups(cachedMatch.partyGroups);
+      setPlayerTagsMap(cachedMatch.playerTagsMap);
     } else {
-      setError(true);
+      // If not in cache, load from API
+      setIsSearching(true);
+
+      if (!MatchHistoryService.canMakeRequest(matchId)) {
+        setError(true);
+        setIsSearching(false);
+        return;
+      }
+
+      const consumed = MatchHistoryService.consumeRequest(matchId);
+      if (!consumed) {
+        setError(true);
+        setIsSearching(false);
+        return;
+      }
+
+      try {
+        const data = await MatchService.fetchMatchData(matchId);
+        const dataWithId = {
+          ...data,
+          match_id: parseInt(matchId),
+        };
+        setMatchData(dataWithId);
+      } catch (err) {
+        setError(true);
+      } finally {
+        setIsSearching(false);
+      }
     }
   };
 
   const handleExit = () => {
     setMatchData(null);
+    isLoadedFromCacheRef.current = false;
   };
 
   const handleInfo = () => {};
@@ -497,7 +568,10 @@ function ActiveMatchPage() {
 
         {!matchData ? (
           <div className="w-full h-full flex flex-col items-center justify-center relative">
-            <MatchSearchInput onSearch={handleSearch} />
+            <MatchSearchInput
+              onSearch={handleSearch}
+              isSearching={isSearching}
+            />
             {error && (
               <div className="absolute top-[calc(50%+180px)] text-[#c95555] text-sm px-6 py-3 bg-[#c95555]/10 border border-[#c95555]/30 rounded-md max-w-[400px] text-center">
                 {t("activeMatch.searchForm.error")}
@@ -527,6 +601,7 @@ function ActiveMatchPage() {
                   matchStatsMap={matchStatsMap}
                   relationStatsMap={relationStatsMap}
                   partyGroups={partyGroups}
+                  playerTagsMap={playerTagsMap}
                   isTopTable={true}
                 />
                 <TableHeader />
@@ -537,6 +612,7 @@ function ActiveMatchPage() {
                   matchStatsMap={matchStatsMap}
                   relationStatsMap={relationStatsMap}
                   partyGroups={partyGroups}
+                  playerTagsMap={playerTagsMap}
                   isTopTable={false}
                 />
               </div>

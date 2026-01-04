@@ -180,10 +180,17 @@ function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const handleResetSettings = async () => {
     try {
+      // Save current language before reset
+      const currentLang = i18n.language;
+
       await ConfigManager.reset();
       const defaultSettings = await ConfigManager.load();
-      await i18n.changeLanguage(defaultSettings.language);
-      setCurrentLanguage(defaultSettings.language);
+
+      // Restore language (don't reset it)
+      await ConfigManager.update({ language: currentLang });
+      setCurrentLanguage(currentLang);
+
+      // Reset other settings
       setOpacity(defaultSettings.opacity);
       setShortcut(defaultSettings.shortcut);
       setPreviousShortcut(defaultSettings.shortcut);
